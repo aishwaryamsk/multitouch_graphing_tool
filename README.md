@@ -1,4 +1,4 @@
 # Multi Touch Graphing Tool
-A graphing tool to explore visualizations using multi-touch gestures.
+A graphing tool to explore data using multi-touch gestures.
 
-**Link:** [Tool](https://aishwaryamsk.github.io/multitouch_graphing_tool/index.html)
+**Link:** [View Tool](https://aishwaryamsk.github.io/multitouch_graphing_tool/index.html)
