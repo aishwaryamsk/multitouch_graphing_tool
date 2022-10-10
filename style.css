@@ -1,0 +1,4 @@
+#side-panel {
+    border-right: 0.1em solid lightgrey;
+    overflow-y: scroll;
+}

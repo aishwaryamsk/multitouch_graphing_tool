@@ -116,7 +116,8 @@ function updateVisualization(data) {
         .attr("x", width / 2)
         .attr("y", height + margin.top + margin.bottom - 40)
         .attr("text-anchor", "middle")
-        .attr("font-size", "0.9em");;
+        .attr("font-size", "0.9em")
+        //.style("fill", 'dimgrey');
 }
 
 /* Helper functions */
