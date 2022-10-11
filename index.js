@@ -3,8 +3,9 @@ let width;
 let height;
 let margin = { top: 20, right: 30, bottom: 90, left: 30 };
 
-let x;
-let y;
+let xScale; // scale for labels on x-axis
+let unitXScale; // scale for unit vis on x-axis
+let unitYScale; // scale for unit vis on y-axis
 let attribute = null;
 
 /* list of {data: {…}, attrs: {…}} 
@@ -14,23 +15,24 @@ let dataset = [];
 
 // settings
 let duration = 1;
-let circle_radius = 5;
+let circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 
 
 $(document).ready(function () {
     height = window.innerHeight - margin.top - margin.bottom;
     width = window.innerWidth - d3.select('#side-panel').node().getBoundingClientRect().width - margin.left - margin.right;
-    x = d3.scaleBand();
-    y = d3.scaleLinear();
+    xScale = d3.scaleBand();
+    unitXScale = d3.scaleLinear();
+    unitYScale = d3.scaleLinear();
 });
 
 Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     .then(function (d) {
         dataset = setData(d[0]);
         // CHANGE LATER?: initially, use chocolate as an attribute to group on
-        //attribute = 'chocolate';
-        attribute = 'sugarPercent';
+        attribute = 'chocolate';
+        //attribute = 'sugarPercent';
         let currentData = groupByAttribute(dataset, attribute);
         createVisualization();
         updateVisualization(currentData);
@@ -42,44 +44,65 @@ function createVisualization() {
 }
 
 function updateVisualization(data) {
-    console.log(Object.keys(attrValuesCount));
-    x.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.5); // takes string as input
 
-    // say 4 corcles in a row
-    let numRowElements = 4;
-    console.log(attrValuesCount);
-    console.log(Math.ceil(Math.max(...Object.values(attrValuesCount)) / numRowElements));
-    //y.domain([Object.keys(data)]).rangeRound([height, 0]).paddingInner(.5); // number of rows 
-    y.domain([0, Math.ceil(Math.max(...Object.values(attrValuesCount)))]).range([height - 20, 0]); // number of rows 
+    let unitVisPadding = 2; //pixels
 
-    console.log(x('0.011'));
-    console.log(x(0.011));
-    console.log(y(2));
+    xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
+
+    /* let the number of elements per row in each column be at least 1 */
+    let numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
+    numRowElements = numRowElements > 1 ? numRowElements : 1;
+
+    /* x-scale of the attributes */
+    
+    unitXScale.domain([0, numRowElements]);
+
+    let maxAttributeValueCount = Math.max(...Object.values(attrValuesCount));
+    let unitVisHtMargin = 10;
+
+    /* if (numRowElements > 1) {
+        let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+        unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)]).range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
+    } else {
+        unitYScale.domain([1, Math.ceil(maxAttributeValueCount)]).range([height - unitVisHtMargin, 0]); // number of rows 
+    } */
+
+    let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)])
+        .range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
 
     d3.select('.x-axis').attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x))
-        .selectAll("text")
-        .attr("transform", "translate(-10,0)rotate(-45)")
-        .style("text-anchor", "end");
+        .call(d3.axisBottom(xScale));
 
+
+    // if the number of attributes are greater than arbitrary number 5, tilt the labels
+    if (Object.keys(attrValuesCount).length > 5)
+        d3.select('.x-axis').selectAll("text")
+            .attr("transform", "translate(-10,0)rotate(-45)")
+            .style("text-anchor", "end");
+
+    // Update data in the visualization
     let elements = d3.selectAll(".unit-vis")
         .selectAll('.unit')
         .data(data, d => d.id);
-
-    console.log(elements);
-
-
 
     // update elements
     elements.transition().duration(duration)
         .attr("cx", function (d) {
             if (attribute != null) {
-                return x(String(d.data[attribute]));
+                if (numRowElements > 1) {
+                    // update the range of x-scale for unit vis to the x value of the column
+                    let bandwidth = xScale.bandwidth();
+                    unitXScale.range([xScale(String(d.data[attribute])),
+                    xScale(String(d.data[attribute])) + bandwidth]);
+
+                    return unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
+                } else return xScale(String(d.data[attribute]));
             }
         })
         .attr("cy", function (d) {
             if (attribute != null) {
-                return y(d.attrs.groupBy.order);
+                return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
             }
         });
 
@@ -88,20 +111,28 @@ function updateVisualization(data) {
         .append("circle")
         .attr("class", "unit")
         .attr("cx", function (d) {
-            //1.5*x(0)
             if (attribute != null) {
-                //console.log(d);
-                //console.log(d.attrs.groupBy.value);
-                return x(String(d.data[attribute]));
+                if (numRowElements > 1) {
+                    // update the range of x-scale for unit vis to the x value of the column
+                    bandwidth = xScale.bandwidth();
+                    unitXScale.range([xScale(String(d.data[attribute])),
+                    xScale(String(d.data[attribute])) + bandwidth]);
+
+                    return unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
+                } else return xScale(String(d.data[attribute]));
             }
         })
         .attr("cy", function (d) {
             if (attribute != null) {
-                //console.log(d);
-                return y(d.attrs.groupBy.order);
+                //return unitYScale(d.attrs.groupBy.order);
+                /* if (numRowElements > 1) {
+                    return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
+                } else return unitYScale(d.attrs.groupBy.order); */
+
+                return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
             }
         })
-        .attr('r', circle_radius)
+        .attr('r', circleRadius)
         .style('fill', d => d.attrs.color);
 
     // remove elements
@@ -117,7 +148,7 @@ function updateVisualization(data) {
         .attr("y", height + margin.top + margin.bottom - 40)
         .attr("text-anchor", "middle")
         .attr("font-size", "0.9em")
-        //.style("fill", 'dimgrey');
+    //.style("fill", 'dimgrey');
 }
 
 /* Helper functions */
@@ -141,11 +172,11 @@ function groupByAttribute(data, attribute) {
 
     // keep count of element's occurrence in each attribute value and store for grouping
     for (let dataPt of data) {
+        attrValuesCount[dataPt.data[attribute]]++;
         dataPt.attrs['groupBy'] = {
-            'value': attrValues.indexOf(dataPt.data[attribute]),
+            'column': attrValues.indexOf(dataPt.data[attribute]),
             'order': attrValuesCount[dataPt.data[attribute]]
         };
-        attrValuesCount[dataPt.data[attribute]]++;
     }
     return data;
 }
