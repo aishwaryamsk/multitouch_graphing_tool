@@ -2,3 +2,37 @@
     border-right: 0.1em solid lightgrey;
     overflow-y: scroll;
 }
+
+.lasso path {
+    stroke: rgb(110, 110, 110);
+    stroke-width: 2px;
+}
+
+.lasso .drawn {
+    fill-opacity: .05;
+}
+
+.lasso .loop_close {
+    fill: none;
+    stroke-dasharray: 4, 4;
+}
+
+.lasso .origin {
+    fill: #3399FF;
+    fill-opacity: .5;
+}
+
+.not_possible {
+    fill: rgb(200, 200, 200);
+}
+
+.possible {
+    fill: #EC888C;
+}
+
+.selected {
+    /* fill: steelblue; */
+    /* fill: rgb(90, 180, 70); */
+    stroke: black;
+    stroke-width: 2px;
+}

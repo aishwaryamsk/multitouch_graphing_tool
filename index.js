@@ -31,6 +31,7 @@ Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     .then(function (d) {
         dataset = setData(d[0]);
         // CHANGE LATER?: initially, use chocolate as an attribute to group on
+        //attribute = 'fruity';
         attribute = 'chocolate';
         //attribute = 'sugarPercent';
         let currentData = groupByAttribute(dataset, attribute);
@@ -41,11 +42,12 @@ Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
 function createVisualization() {
     d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom]);
     d3.select('#content').attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
 }
 
 function updateVisualization(data) {
 
-    let unitVisPadding = 2; //pixels
+    let unitVisPadding = 1.5; //pixels
 
     xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
 
@@ -54,7 +56,7 @@ function updateVisualization(data) {
     numRowElements = numRowElements > 1 ? numRowElements : 1;
 
     /* x-scale of the attributes */
-    
+
     unitXScale.domain([0, numRowElements]);
 
     let maxAttributeValueCount = Math.max(...Object.values(attrValuesCount));
@@ -149,6 +151,12 @@ function updateVisualization(data) {
         .attr("text-anchor", "middle")
         .attr("font-size", "0.9em")
     //.style("fill", 'dimgrey');
+
+
+    // Enable Lasso selection for unit visualization -- for the svg and the units within it
+    lasso.targetArea(d3.select('#chart'))
+        .items(d3.selectAll('#chart .unit'));
+    d3.select("#chart").call(lasso);
 }
 
 /* Helper functions */
@@ -206,4 +214,47 @@ function candyRow(d) {
         pricePercent: +d['Price Percent'],
         winPercent: +d['Win Percent'],
     };
+};
+
+/* Lasso functions */
+let lasso = d3.lasso()
+    .closePathDistance(500)
+    .closePathSelect(true)
+    .on("start", lassoStart)
+    .on("draw", lassoDraw)
+    .on("end", function () {
+        lassoEnd();
+        //console.log('selectedItems', lasso.selectedItems());
+    });
+
+function lassoStart() {
+    lasso.items()
+        .attr('r', circleRadius) // reset radius
+        .classed("not_possible", true)
+        .classed("selected", false);
+};
+
+function lassoDraw() {
+    lasso.possibleItems()
+        .classed("not_possible", false)
+        .classed("possible", true)
+        .attr('r', circleRadius);
+    lasso.notPossibleItems()
+        .classed("not_possible", true)
+        .classed("possible", false)
+        .attr('r', circleRadius / 2); // decrease radius of not possible points
+};
+
+function lassoEnd() {
+    lasso.items()
+        .classed("not_possible", false)
+        .classed("possible", false);
+
+    /* the radius of possible points (which becomes selected now) will remain as 'circleRadius'.
+    So, only update the radius of unselected points. */
+    lasso.selectedItems()
+        .classed("selected", true);
+    lasso.notSelectedItems()
+        .classed("selected", false)
+        .attr('r', circleRadius); // reset radius of unselected points
 };
