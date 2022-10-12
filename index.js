@@ -252,9 +252,14 @@ function lassoEnd() {
 
     /* the radius of possible points (which becomes selected now) will remain as 'circleRadius'.
     So, only update the radius of unselected points. */
-    lasso.selectedItems()
+    /* lasso.selectedItems()
         .classed("selected", true);
     lasso.notSelectedItems()
         .classed("selected", false)
-        .attr('r', circleRadius); // reset radius of unselected points
+        .attr('r', circleRadius); */ // reset radius of unselected points
 };
+
+function unselectPoints() {
+    lasso.notSelectedItems()
+        .attr('r', circleRadius); // reset radius of unselected points
+}
