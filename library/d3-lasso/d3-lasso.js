@@ -815,68 +815,72 @@ return d[d.length-1];};return ", funcName].join("")
 
             function dragmove(e, d) {
                 // Get mouse position within body, used for calculations
-                var x,y;
 
-                if(e.sourceEvent.type === "touchmove") {
-                  x = e.sourceEvent.touches[0].clientX;
-                  y = e.sourceEvent.touches[0].clientY;
-                }
-                else {
-                    x = e.sourceEvent.clientX;
-                    y = e.sourceEvent.clientY;
-                }
-                
+                // Allow only 1 pointer to trace the Lasso path
+                if (e.identifier === 0) {
+                  var x,y;
 
-                // Get mouse position within drawing area, used for rendering
-                var tx = e.x;
-                var ty = e.y;
+                  if(e.sourceEvent.type === "touchmove") {
+                    x = e.sourceEvent.touches[0].clientX;
+                    y = e.sourceEvent.touches[0].clientY;
+                  }
+                  else {
+                      x = e.sourceEvent.clientX;
+                      y = e.sourceEvent.clientY;
+                  }
+                  
 
-                // Initialize the path or add the latest point to it
-                if (tpath==="") {
-                    tpath = tpath + "M " + tx + " " + ty;
-                    origin = [x,y];
-                    torigin = [tx,ty];
-                    // Draw origin node
-                    origin_node
-                        .attr("cx",tx)
-                        .attr("cy",ty)
-                        .attr("r",7)
-                        .attr("display",null);
-                }
-                else {
-                    tpath = tpath + " L " + tx + " " + ty;
-                }
+                  // Get mouse position within drawing area, used for rendering
+                  var tx = e.x;
+                  var ty = e.y;
 
-                drawnCoords.push([x,y]);
+                  // Initialize the path or add the latest point to it
+                  if (tpath==="") {
+                      tpath = tpath + "M " + tx + " " + ty;
+                      origin = [x,y];
+                      torigin = [tx,ty];
+                      // Draw origin node
+                      origin_node
+                          .attr("cx",tx)
+                          .attr("cy",ty)
+                          .attr("r",7)
+                          .attr("display",null);
+                  }
+                  else {
+                      tpath = tpath + " L " + tx + " " + ty;
+                  }
 
-                // Calculate the current distance from the lasso origin
-                var distance = Math.sqrt(Math.pow(x-origin[0],2)+Math.pow(y-origin[1],2));
+                  drawnCoords.push([x,y]);
 
-                // Set the closed path line
-                var close_draw_path = "M " + tx + " " + ty + " L " + torigin[0] + " " + torigin[1];
+                  // Calculate the current distance from the lasso origin
+                  var distance = Math.sqrt(Math.pow(x-origin[0],2)+Math.pow(y-origin[1],2));
 
-                // Draw the lines
-                dyn_path.attr("d",tpath);
+                  // Set the closed path line
+                  var close_draw_path = "M " + tx + " " + ty + " L " + torigin[0] + " " + torigin[1];
 
-                close_path.attr("d",close_draw_path);
+                  // Draw the lines
+                  dyn_path.attr("d",tpath);
 
-                // Check if the path is closed
-                isPathClosed = distance<=closePathDistance ? true : false;
+                  close_path.attr("d",close_draw_path);
 
-                // If within the closed path distance parameter, show the closed path. otherwise, hide it
-                if(isPathClosed && closePathSelect) {
-                    close_path.attr("display",null);
-                }
-                else {
-                    close_path.attr("display","none");
-                }
+                  // Check if the path is closed
+                  isPathClosed = distance<=closePathDistance ? true : false;
 
-                items.nodes().forEach(function(n) {
-                    n.__lasso.loopSelect = (isPathClosed && closePathSelect) ? (robustPnp(drawnCoords,n.__lasso.lassoPoint) < 1) : false; 
-                    n.__lasso.possible = n.__lasso.hoverSelect || n.__lasso.loopSelect; 
-                });
+                  // If within the closed path distance parameter, show the closed path. otherwise, hide it
+                  if(isPathClosed && closePathSelect) {
+                      close_path.attr("display",null);
+                  }
+                  else {
+                      close_path.attr("display","none");
+                  }
 
-                on.draw();
+                  items.nodes().forEach(function(n) {
+                      n.__lasso.loopSelect = (isPathClosed && closePathSelect) ? (robustPnp(drawnCoords,n.__lasso.lassoPoint) < 1) : false; 
+                      n.__lasso.possible = n.__lasso.hoverSelect || n.__lasso.loopSelect; 
+                  });
+
+                  on.draw();
+              }
             }
 
             function dragend() {
