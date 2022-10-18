@@ -791,14 +791,14 @@ return d[d.length-1];};return ", funcName].join("")
                 close_path.attr("d",null);
 
                 // Set every item to have a false selection and reset their center point and counters
-                items.nodes().forEach(function(e) {            
-                    e.__lasso.possible = false;
-                    e.__lasso.selected = false;
-                    e.__lasso.hoverSelect = false;
-                    e.__lasso.loopSelect = false;
+                items.nodes().forEach(function(elm) {
+                    elm.__lasso.possible = false;
+                    elm.__lasso.selected = false;
+                    elm.__lasso.hoverSelect = false;
+                    elm.__lasso.loopSelect = false;
                     
-                    var box = e.getBoundingClientRect();
-                    e.__lasso.lassoPoint = [Math.round(box.left + box.width/2),Math.round(box.top + box.height/2)];
+                    var box = elm.getBoundingClientRect();
+                    elm.__lasso.lassoPoint = [Math.round(box.left + box.width/2),Math.round(box.top + box.height/2)];
                 });
 
                 // if hover is on, add hover function
