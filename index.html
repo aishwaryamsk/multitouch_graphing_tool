@@ -38,26 +38,13 @@
 </head>
 
 <body onload="init();" style="touch-action:none">
-
-    
-    <div id="pointer1">Tap, Hold or Swipe me 1</div>
-    <div id="pointer2">Tap, Hold or Swipe me 2</div>
-    <div id="pointer3">Tap, Hold or Swipe me 3</div>
-    <!-- UI for logging/debugging -->
-    <button id="log" onclick="enableLog(event);">Start/Stop event logging</button>
-    <button id="clearlog" onclick="clearLog(event);">Clear the log</button>
-    <p></p>
-    <output></output>
-
-
-
-    <div class="row g-0">
+    <div id='content' class="row g-0">
         <div id='side-panel' class='col-3'>
             control panel
         </div>
         <div class='col-9'>
             <svg id="chart">
-                <g id="content">
+                <g id="chart-content">
                     <g class='unit-vis'></g>
                     <g class='x-axis'></g>
                     <text id='x-axis-label'></text>

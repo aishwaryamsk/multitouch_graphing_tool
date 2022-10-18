@@ -23,9 +23,10 @@ let logEvents = false;
 
 // Preserving a pointer's event state during various event phases
 // Event caches, one per touch target
-const evCache1 = [];
-const evCache2 = [];
-const evCache3 = [];
+// const evCache1 = [];
+// const evCache2 = [];
+// const evCache3 = [];
+const evCache = [];
 
 $(document).ready(function () {
     height = window.innerHeight - margin.top - margin.bottom;
@@ -34,30 +35,30 @@ $(document).ready(function () {
     unitXScale = d3.scaleLinear();
     unitYScale = d3.scaleLinear();
 
-    console.log(document.getElementById('chart'));
+    // console.log(document.getElementById('chart'));
 
-    document.getElementById('chart').addEventListener("gesturechange", gestureChange, false);
+    // document.getElementById('chart').addEventListener("gesturechange", gestureChange, false);
 
-    //document.getElementById('chart').addEventListener('touchstart', function (e) {
-    document.getElementById('chart').addEventListener('pointerdown', function (e) {
+    // //document.getElementById('chart').addEventListener('touchstart', function (e) {
+    // document.getElementById('chart').addEventListener('pointerdown', function (e) {
 
-        console.log(e);
-        e.preventDefault();
-        /* if (e.touches.length > 1) {
-            // ... do what you like here
-            console.log('two finger');
-        } */
-    }, false);
+    //     console.log(e);
+    //     e.preventDefault();
+    //     /* if (e.touches.length > 1) {
+    //         // ... do what you like here
+    //         console.log('two finger');
+    //     } */
+    // }, false);
 
 
 });
 
-function gestureChange(e) {
-    console.log('gesture change');
-    if (e.pointers.length >= 2) {
-        // scroll with 2 or more
-    }
-}
+// function gestureChange(e) {
+//     console.log('gesture change');
+//     if (e.pointers.length >= 2) {
+//         // scroll with 2 or more
+//     }
+// }
 
 Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     .then(function (d) {
@@ -73,7 +74,7 @@ Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
 
 function createVisualization() {
     d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom]);
-    d3.select('#content').attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    d3.select('#chart-content').attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
 }
@@ -272,17 +273,13 @@ function setHandlers(name) {
 }
 
 function init() {
-    setHandlers("pointer1");
-    setHandlers("pointer2");
-    setHandlers("pointer3");
+    setHandlers("content");
 }
 
 function pointerdownHandler(ev) {
     // The pointerdown event signals the start of a touch interaction.
     // Save this event for later processing (this could be part of a
     // multi-touch interaction) and update the background color
-    console.log(ev);
-    console.log(ev.target.id);
     pushEvent(ev);
     if (logEvents) {
         log(`pointerDown: name = ${ev.target.id}`, ev);
@@ -300,7 +297,6 @@ function pointermoveHandler(ev) {
         log("pointerMove", ev);
     }
     updateBackground(ev);
-    ev.target.style.border = "dashed";
 }
 
 function pointerupHandler(ev) {
@@ -311,29 +307,30 @@ function pointerupHandler(ev) {
     // background and border
     removeEvent(ev);
     updateBackground(ev);
-    ev.target.style.border = "1px solid black";
 }
 
 /* helpers for cache management of pointer events */
-function getCache(ev) {
-    // Return the cache for this event's target element
-    switch (ev.target.id) {
-        case "pointer1": return evCache1;
-        case "pointer2": return evCache2;
-        case "pointer3": return evCache3;
-        default: log("Error with cache handling", ev);
-    }
-}
+// function getCache(ev) {
+//     // Return the cache for this event's target element
+//     switch (ev.target.id) {
+//         // case "pointer1": return evCache1;
+//         // case "pointer2": return evCache2;
+//         // case "pointer3": return evCache3;
+//         case "content": return evCache;
+//         default: log("Error with cache handling", ev);
+//     }
+// }
 
 function pushEvent(ev) {
     // Save this event in the target's cache
-    const evCache = getCache(ev);
+    //const evCache = getCache(ev);
+    //console.log(getCache(ev))
     evCache.push(ev);
 }
 
 function removeEvent(ev) {
     // Remove this event from the target's cache
-    const evCache = getCache(ev);
+   // const evCache = getCache(ev);
     const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
     evCache.splice(index, 1);
 }
@@ -345,7 +342,8 @@ function updateBackground(ev) {
     //   yellow - one pointer down
     //   pink - two pointers down
     //   lightblue - three or more pointers down
-    const evCache = getCache(ev);
+
+    //const evCache = getCache(ev);
     switch (evCache.length) {
         case 0:
             // Target element has no touch points
@@ -354,13 +352,19 @@ function updateBackground(ev) {
         case 1:
             // Single touch point
             ev.target.style.background = "yellow";
+            console.log(1);
+            console.log(ev);
             break;
         case 2:
             // Two simultaneous touch points
             ev.target.style.background = "pink";
+            console.log(2);
+            console.log(ev);
             break;
         default:
             // Three or more simultaneous touches
+            console.log(3);
+            console.log(ev);
             ev.target.style.background = "lightblue";
     }
 }
