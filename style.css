@@ -3,6 +3,23 @@
     overflow-y: scroll;
 }
 
+/* Pointers */
+#pointer1 {
+    background: white;
+    border: 1px solid black;
+}
+
+#pointer2 {
+    background: white;
+    border: 1px solid black;
+}
+
+#pointer3 {
+    background: white;
+    border: 1px solid black;
+}
+
+/* Lasso selection */
 .lasso path {
     stroke: rgb(110, 110, 110);
     stroke-width: 2px;
@@ -31,8 +48,6 @@
 }
 
 .selected {
-    /* fill: steelblue; */
-    /* fill: rgb(90, 180, 70); */
     stroke: black;
     stroke-width: 2px;
 }

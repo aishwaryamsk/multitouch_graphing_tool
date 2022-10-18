@@ -18,6 +18,14 @@ let duration = 1;
 let circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 
+// Log events flag
+let logEvents = false;
+
+// Preserving a pointer's event state during various event phases
+// Event caches, one per touch target
+const evCache1 = [];
+const evCache2 = [];
+const evCache3 = [];
 
 $(document).ready(function () {
     height = window.innerHeight - margin.top - margin.bottom;
@@ -25,7 +33,31 @@ $(document).ready(function () {
     xScale = d3.scaleBand();
     unitXScale = d3.scaleLinear();
     unitYScale = d3.scaleLinear();
+
+    console.log(document.getElementById('chart'));
+
+    document.getElementById('chart').addEventListener("gesturechange", gestureChange, false);
+
+    //document.getElementById('chart').addEventListener('touchstart', function (e) {
+    document.getElementById('chart').addEventListener('pointerdown', function (e) {
+
+        console.log(e);
+        e.preventDefault();
+        /* if (e.touches.length > 1) {
+            // ... do what you like here
+            console.log('two finger');
+        } */
+    }, false);
+
+
 });
+
+function gestureChange(e) {
+    console.log('gesture change');
+    if (e.pointers.length >= 2) {
+        // scroll with 2 or more
+    }
+}
 
 Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     .then(function (d) {
@@ -42,6 +74,7 @@ Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
 function createVisualization() {
     d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom]);
     d3.select('#content').attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
 
 }
 
@@ -215,6 +248,145 @@ function candyRow(d) {
         winPercent: +d['Win Percent'],
     };
 };
+
+/* 
+* Register events handlers for pointers (touch, pen, mouse, etc) 
+* Events: pointerdown, pointermove, pointerup (pointercancel, pointerout, pointerleave)
+* Source: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events/Multi-touch_interaction
+*/
+function setHandlers(name) {
+    // Install event handlers for the given element
+    const el = document.getElementById(name);
+    el.onpointerdown = pointerdownHandler;
+   //el.ontouchstart = (event) => { console.log('touch')};
+    //el.ontouchstart = pointerdownHandler;
+    //el.onmousedown = pointerdownHandler;
+    el.onpointermove = pointermoveHandler;
+
+    // Use same handler for pointer{up,cancel,out,leave} events since
+    // the semantics for these events - in this app - are the same.
+    el.onpointerup = pointerupHandler;
+    el.onpointercancel = pointerupHandler;
+    el.onpointerout = pointerupHandler;
+    el.onpointerleave = pointerupHandler;
+}
+
+function init() {
+    setHandlers("pointer1");
+    setHandlers("pointer2");
+    setHandlers("pointer3");
+}
+
+function pointerdownHandler(ev) {
+    // The pointerdown event signals the start of a touch interaction.
+    // Save this event for later processing (this could be part of a
+    // multi-touch interaction) and update the background color
+    console.log(ev);
+    console.log(ev.target.id);
+    pushEvent(ev);
+    if (logEvents) {
+        log(`pointerDown: name = ${ev.target.id}`, ev);
+    }
+    updateBackground(ev);
+}
+
+function pointermoveHandler(ev) {
+    // Note: if the user makes more than one "simultaneous" touch, most browsers
+    // fire at least one pointermove event and some will fire several pointermoves.
+    //
+    // This function sets the target element's border to "dashed" to visually
+    // indicate the target received a move event.
+    if (logEvents) {
+        log("pointerMove", ev);
+    }
+    updateBackground(ev);
+    ev.target.style.border = "dashed";
+}
+
+function pointerupHandler(ev) {
+    if (logEvents) {
+        log(ev.type, ev);
+    }
+    // Remove this touch point from the cache and reset the target's
+    // background and border
+    removeEvent(ev);
+    updateBackground(ev);
+    ev.target.style.border = "1px solid black";
+}
+
+/* helpers for cache management of pointer events */
+function getCache(ev) {
+    // Return the cache for this event's target element
+    switch (ev.target.id) {
+        case "pointer1": return evCache1;
+        case "pointer2": return evCache2;
+        case "pointer3": return evCache3;
+        default: log("Error with cache handling", ev);
+    }
+}
+
+function pushEvent(ev) {
+    // Save this event in the target's cache
+    const evCache = getCache(ev);
+    evCache.push(ev);
+}
+
+function removeEvent(ev) {
+    // Remove this event from the target's cache
+    const evCache = getCache(ev);
+    const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+    evCache.splice(index, 1);
+}
+
+function updateBackground(ev) {
+    // Change background color based on the number of simultaneous touches/pointers
+    // currently down:
+    //   white - target element has no touch points i.e. no pointers down
+    //   yellow - one pointer down
+    //   pink - two pointers down
+    //   lightblue - three or more pointers down
+    const evCache = getCache(ev);
+    switch (evCache.length) {
+        case 0:
+            // Target element has no touch points
+            ev.target.style.background = "white";
+            break;
+        case 1:
+            // Single touch point
+            ev.target.style.background = "yellow";
+            break;
+        case 2:
+            // Two simultaneous touch points
+            ev.target.style.background = "pink";
+            break;
+        default:
+            // Three or more simultaneous touches
+            ev.target.style.background = "lightblue";
+    }
+}
+
+// Log events flag
+//let logEvents = false;
+
+function enableLog(ev) {
+    logEvents = !logEvents;
+}
+
+function log(name, ev) {
+    const o = document.getElementsByTagName('output')[0];
+    const s = `${name}:<br>`
+        + `  pointerID   = ${ev.pointerId}<br>`
+        + `  pointerType = ${ev.pointerType}<br>`
+        + `  isPrimary   = ${ev.isPrimary}`;
+    o.innerHTML += `${s}<br>`;
+}
+
+function clearLog(event) {
+    const o = document.getElementsByTagName('output')[0];
+    o.innerHTML = "";
+}
+
+
 
 /* Lasso functions */
 let lasso = d3.lasso()
