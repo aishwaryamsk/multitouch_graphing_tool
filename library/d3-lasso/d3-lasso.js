@@ -882,6 +882,9 @@ return d[d.length-1];};return ", funcName].join("")
                   });
 
                   on.draw();
+              } else if (evCache.length > 1) { // if more than 1 finger on screen
+                if (!origin_node.attr('display')) // erase the blue dot for start of lasso selection
+                  origin_node.attr("display","none");
               }
             }
 

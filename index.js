@@ -248,9 +248,10 @@ function init() {
 }
 
 function pointerdownHandler(ev) {
-    // The pointerdown event signals the start of a touch interaction.
-    // Save this event for later processing (this could be part of a
-    // multi-touch interaction) and update the background color
+    /* pointers can be: finger(s) - touch, pen, etc.
+    * mouse hover won't be a pointerdown
+    * mouse click counts as a pointerdown
+    * */
     ev.preventDefault();
     evCache.push(ev);
     updateBackground(ev);
@@ -319,11 +320,13 @@ function pointerupHandler(ev) {
 
 function removeEvent(ev) {
     // Remove this event from the target's cache
-    console.log('ev.pointerId to remove: ', ev.pointerId);
     const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
 
     if (index > -1)
         evCache.splice(index, 1);
+
+    console.log('pointers: ', evCache.length);
+    updateBackground(ev);
 }
 
 function updateBackground(ev) {
@@ -390,13 +393,20 @@ function lassoEnd() {
         .classed("not_possible", false)
         .classed("possible", false);
 
+    // if nothing is selected, keep element radius as unchanged
+    if (lasso.selectedItems().size() === 0) {
+        lasso.notSelectedItems()
+            .classed("selected", false)
+            .attr('r', circleRadius); // reset radius of unselected points
+    }
+
     /* the radius of possible points (which becomes selected now) will remain as 'circleRadius'.
     So, only update the radius of unselected points. */
-    /* lasso.selectedItems()
-        .classed("selected", true);
-    lasso.notSelectedItems()
-        .classed("selected", false)
-        .attr('r', circleRadius); */ // reset radius of unselected points
+    // lasso.selectedItems()
+    //     .classed("selected", true);
+    // lasso.notSelectedItems()
+    //     .classed("selected", false)
+    //     .attr('r', circleRadius); // reset radius of unselected points
 };
 
 function unselectPoints() {
