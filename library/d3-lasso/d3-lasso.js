@@ -816,8 +816,10 @@ return d[d.length-1];};return ", funcName].join("")
             function dragmove(e, d) {
                 // Get mouse position within body, used for calculations
 
+                //console.log(evCache)
                 // Allow only 1 pointer to trace the Lasso path
-                if (e.identifier === 0) {
+                //if (e.identifier === 0) {
+                if (evCache.length == 1) {
                   var x,y;
 
                   if(e.sourceEvent.type === "touchmove") {

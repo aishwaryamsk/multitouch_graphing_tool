@@ -18,15 +18,12 @@ let duration = 1;
 let circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 
-// Log events flag
-let logEvents = false;
 
+/* Multi-touch or multi-pointers */
 // Preserving a pointer's event state during various event phases
 // Event caches, one per touch target
-// const evCache1 = [];
-// const evCache2 = [];
-// const evCache3 = [];
-const evCache = [];
+let evCache = [];
+let prevDiff = -1;
 
 $(document).ready(function () {
     height = window.innerHeight - margin.top - margin.bottom;
@@ -34,31 +31,7 @@ $(document).ready(function () {
     xScale = d3.scaleBand();
     unitXScale = d3.scaleLinear();
     unitYScale = d3.scaleLinear();
-
-    // console.log(document.getElementById('chart'));
-
-    // document.getElementById('chart').addEventListener("gesturechange", gestureChange, false);
-
-    // //document.getElementById('chart').addEventListener('touchstart', function (e) {
-    // document.getElementById('chart').addEventListener('pointerdown', function (e) {
-
-    //     console.log(e);
-    //     e.preventDefault();
-    //     /* if (e.touches.length > 1) {
-    //         // ... do what you like here
-    //         console.log('two finger');
-    //     } */
-    // }, false);
-
-
 });
-
-// function gestureChange(e) {
-//     console.log('gesture change');
-//     if (e.pointers.length >= 2) {
-//         // scroll with 2 or more
-//     }
-// }
 
 Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     .then(function (d) {
@@ -259,9 +232,6 @@ function setHandlers(name) {
     // Install event handlers for the given element
     const el = document.getElementById(name);
     el.onpointerdown = pointerdownHandler;
-   //el.ontouchstart = (event) => { console.log('touch')};
-    //el.ontouchstart = pointerdownHandler;
-    //el.onmousedown = pointerdownHandler;
     el.onpointermove = pointermoveHandler;
 
     // Use same handler for pointer{up,cancel,out,leave} events since
@@ -270,69 +240,181 @@ function setHandlers(name) {
     el.onpointercancel = pointerupHandler;
     el.onpointerout = pointerupHandler;
     el.onpointerleave = pointerupHandler;
+
+
+    // Install event handlers for the given element
+    // const el = document.getElementById(name);
+    // el.onpointerdown = startHandler; //el.ontouchstart = startHandler;
+    // el.onpointermove = moveHandler; //el.ontouchmove = moveHandler;
+    // // Use same handler for touchcancel and touchend
+    // el.onpointerup = endHandler; //el.ontouchcancel = endHandler;
+    // el.onpointercancel = endHandler; // el.ontouchend = endHandler;
+    // el.onpointerout = endHandler;
+    // el.onpointerleave = endHandler;
 }
 
 function init() {
     setHandlers("content");
 }
 
+// This is a very basic 2-touch move/pinch/zoom handler that does not include
+// error handling, only handles horizontal moves, etc.
+function handlePinchZoom(ev) {
+    if (ev.targetTouches.length === 2 && ev.changedTouches.length === 2) {
+        // Check if the two target touches are the same ones that started
+        // the 2-touch
+        const point1 = evCache.findLastIndex(
+            (tp) => tp.identifier === ev.targetTouches[0].identifier
+        );
+        const point2 = evCache.findLastIndex(
+            (tp) => tp.identifier === ev.targetTouches[1].identifier
+        );
+
+        if (point1 >= 0 && point2 >= 0) {
+            // Calculate the difference between the start and move coordinates
+            const diff1 = Math.abs(evCache[point1].clientX - ev.targetTouches[0].clientX);
+            const diff2 = Math.abs(evCache[point2].clientX - ev.targetTouches[1].clientX);
+
+            // This threshold is device dependent as well as application specific
+            const PINCH_THRESHOLD = ev.target.clientWidth / 10;
+            if (diff1 >= PINCH_THRESHOLD && diff2 >= PINCH_THRESHOLD)
+                ev.target.style.background = "green";
+        } else {
+            // empty evCache
+            evCache = [];
+        }
+    }
+}
+
+
+function startHandler(ev) {
+    console.log(ev);
+    console.log(ev.targetTouches);
+    // If the user makes simultaneous touches, the browser will fire a
+    // separate touchstart event for each touch point. Thus if there are
+    // three simultaneous touches, the first touchstart event will have
+    // targetTouches length of one, the second event will have a length
+    // of two, and so on.
+    ev.preventDefault();
+    // Cache the touch points for later processing of 2-touch pinch/zoom
+    if (ev.targetTouches.length >= 2) {
+        for (let i = 0; i < ev.targetTouches.length; i++) {
+            //evCache.push(ev.targetTouches[i]);
+            evCache.push(ev.targetTouches[i]);
+        }
+    }
+    //if (logEvents) log("touchStart", ev, true);
+    updateBackground(ev);
+}
+
+function moveHandler(ev) {
+    // Note: if the user makes more than one "simultaneous" touches, most browsers
+    // fire at least one touchmove event and some will fire several touchmoves.
+    // Consequently, an application might want to "ignore" some touchmoves.
+    //
+    // This function sets the target element's border to "dashed" to visually
+    // indicate the target received a move event.
+    //
+    ev.preventDefault();
+    //if (logEvents) log("touchMove", ev, false);
+    // To avoid too much color flashing many touchmove events are started,
+    // don't update the background if two touch points are active
+    if (!(ev.touches.length === 2 && ev.targetTouches.length === 2))
+        updateBackground(ev);
+
+    // Set the target element's border to dashed to give a clear visual
+    // indication the element received a move event.
+    ev.target.style.border = "dashed";
+
+    // Check this event for 2-touch Move/Pinch/Zoom gesture
+    handlePinchZoom(ev);
+}
+
+function endHandler(ev) {
+    ev.preventDefault();
+    //if (logEvents) log(ev.type, ev, false);
+    if (ev.targetTouches.length === 0) {
+        // Restore background and border to original values
+        ev.target.style.background = "white";
+        ev.target.style.border = "1px solid black";
+    }
+}
+
+
+
 function pointerdownHandler(ev) {
     // The pointerdown event signals the start of a touch interaction.
     // Save this event for later processing (this could be part of a
     // multi-touch interaction) and update the background color
-    pushEvent(ev);
-    if (logEvents) {
-        log(`pointerDown: name = ${ev.target.id}`, ev);
-    }
+    evCache.push(ev);
     updateBackground(ev);
 }
 
 function pointermoveHandler(ev) {
-    // Note: if the user makes more than one "simultaneous" touch, most browsers
-    // fire at least one pointermove event and some will fire several pointermoves.
+    // This function implements a 2-pointer horizontal pinch/zoom gesture.
+    //
+    // If the distance between the two pointers has increased (zoom in),
+    // the target element's background is changed to "pink" and if the
+    // distance is decreasing (zoom out), the color is changed to "lightblue".
     //
     // This function sets the target element's border to "dashed" to visually
-    // indicate the target received a move event.
-    if (logEvents) {
-        log("pointerMove", ev);
+    // indicate the pointer's target received a move event.
+
+    // Find this event in the cache and update its record with this event
+    const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+    evCache[index] = ev;
+
+    // If two pointers are down, check for pinch gestures
+    if (evCache.length === 2) {
+        // Calculate the distance between the two pointers
+        const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
+
+        if (prevDiff > 0) {
+            if (curDiff > prevDiff) {
+                // The distance between the two pointers has increased
+                console.log("Pinch moving OUT -> Zoom in", ev);
+                ev.target.style.background = "plum";
+            }
+            if (curDiff < prevDiff) {
+                // The distance between the two pointers has decreased
+                console.log("Pinch moving IN -> Zoom out", ev);
+                ev.target.style.background = "aqua";
+            }
+        }
+
+        // Cache the distance for the next move event
+        prevDiff = curDiff;
     }
-    updateBackground(ev);
 }
 
+
 function pointerupHandler(ev) {
-    if (logEvents) {
-        log(ev.type, ev);
-    }
     // Remove this touch point from the cache and reset the target's
     // background and border
     removeEvent(ev);
     updateBackground(ev);
-}
 
-/* helpers for cache management of pointer events */
-// function getCache(ev) {
-//     // Return the cache for this event's target element
-//     switch (ev.target.id) {
-//         // case "pointer1": return evCache1;
-//         // case "pointer2": return evCache2;
-//         // case "pointer3": return evCache3;
-//         case "content": return evCache;
-//         default: log("Error with cache handling", ev);
-//     }
-// }
-
-function pushEvent(ev) {
-    // Save this event in the target's cache
-    //const evCache = getCache(ev);
-    //console.log(getCache(ev))
-    evCache.push(ev);
+    // If the number of pointers down is less than two then reset diff tracker
+    if (evCache.length < 2) {
+        prevDiff = -1;
+    }
 }
 
 function removeEvent(ev) {
     // Remove this event from the target's cache
-   // const evCache = getCache(ev);
+    // const evCache = getCache(ev);
+
+    console.log('pointers');
+    for (let i = 0; i < evCache.length; i++) {
+        console.log(evCache[i]);
+    }
+    console.log('ev.pointerId to remove: ', ev.pointerId);
     const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+    console.log('remove: ');
+    console.log('index: ', index);
+
     evCache.splice(index, 1);
+    console.log('evCache: ', evCache);
 }
 
 function updateBackground(ev) {
@@ -343,8 +425,9 @@ function updateBackground(ev) {
     //   pink - two pointers down
     //   lightblue - three or more pointers down
 
-    //const evCache = getCache(ev);
+    console.log(ev.targetTouches);
     switch (evCache.length) {
+    //switch (ev.targetTouches.length) {
         case 0:
             // Target element has no touch points
             ev.target.style.background = "white";
@@ -367,27 +450,6 @@ function updateBackground(ev) {
             console.log(ev);
             ev.target.style.background = "lightblue";
     }
-}
-
-// Log events flag
-//let logEvents = false;
-
-function enableLog(ev) {
-    logEvents = !logEvents;
-}
-
-function log(name, ev) {
-    const o = document.getElementsByTagName('output')[0];
-    const s = `${name}:<br>`
-        + `  pointerID   = ${ev.pointerId}<br>`
-        + `  pointerType = ${ev.pointerType}<br>`
-        + `  isPrimary   = ${ev.isPrimary}`;
-    o.innerHTML += `${s}<br>`;
-}
-
-function clearLog(event) {
-    const o = document.getElementsByTagName('output')[0];
-    o.innerHTML = "";
 }
 
 
