@@ -18,6 +18,8 @@ let duration = 1;
 let circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 
+// selections
+let selection = []; // all selected unit vis
 
 /* Multi-touch or multi-pointers */
 // Preserving a pointer's event state during various event phases
@@ -25,6 +27,8 @@ let attrValuesCount; // keeps count of values in the grouped attribute
 let evCacheContent = [];
 let evCacheXAxis = [];
 let prevDiff = -1; // for pinch-zoom -- any direction
+let onePointerTappedTwice = false;
+let twoPointersTappedTwice = false;
 
 $(document).ready(function () {
     height = window.innerHeight - margin.top - margin.bottom;
@@ -272,6 +276,58 @@ function pointerdownHandler(ev) {
     //evCache.push(ev);
     pushEvent(ev);
     //updateBackground(ev);
+    // check if this is a double tap
+    doubleTapHandler(ev);
+}
+
+function doubleTapHandler(ev) {
+    /* pointers can be: finger(s) - touch, pen, etc.
+    * mouse hover won't be a pointerdown
+    * mouse click counts as a pointerdown
+    * */
+    //evCache.push(ev);
+    //pushEvent(ev);
+    //updateBackground(ev);
+    //console.log(evCacheContent)
+    // detect pointer double taps on chart region
+    detectOnePointerDoubleTap();
+    detectTwoPointersDoubleTap();
+}
+
+function detectOnePointerDoubleTap() {
+    // within 300 milli seconds of a single tap and it was not a double tap previously
+    if (!onePointerTappedTwice && evCacheContent.length === 1 && !twoPointersTappedTwice) {
+        onePointerTappedTwice = true;
+        setTimeout(function () { onePointerTappedTwice = false; }, 300);
+        return false;
+    }
+    // action to do on double tap
+    if (onePointerTappedTwice && evCacheContent.length === 1 && !twoPointersTappedTwice) {
+        // select all unit vis on single pointer double tap
+        selection = d3.selectAll('#chart-content .unit')
+            .classed("selected", false)
+            .attr('r', circleRadius); // reset radius of unselected points;
+        console.log('1 pointer double tap');
+
+        // reset value for next double tap
+        onePointerTappedTwice = false;
+    }
+}
+
+function detectTwoPointersDoubleTap() {
+    //console.log(evCacheContent)
+    if (!twoPointersTappedTwice && evCacheContent.length === 2) {
+        twoPointersTappedTwice = true;
+        setTimeout(function () { twoPointersTappedTwice = false; }, 300);
+        return false;
+    }
+    // action to do on double tap
+    if (twoPointersTappedTwice && evCacheContent.length === 2) {
+        console.log('two pointer double tap');
+        
+        // reset value for next double tap
+        twoPointersTappedTwice = false;
+    }
 }
 
 function pinchZoomXY(ev) {
@@ -456,6 +512,8 @@ function lassoEnd() {
             .classed("selected", false)
             .attr('r', circleRadius); // reset radius of unselected points
     }
+
+    selection = lasso.selectedItems();
 
     /* the radius of possible points (which becomes selected now) will remain as 'circleRadius'.
     So, only update the radius of unselected points. */
