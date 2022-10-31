@@ -22,8 +22,9 @@ let attrValuesCount; // keeps count of values in the grouped attribute
 /* Multi-touch or multi-pointers */
 // Preserving a pointer's event state during various event phases
 // Event caches, one per touch target
-let evCache = [];
-let prevDiff = -1;
+let evCacheContent = [];
+let evCacheXAxis = [];
+let prevDiff = -1; // for pinch-zoom -- any direction
 
 $(document).ready(function () {
     height = window.innerHeight - margin.top - margin.bottom;
@@ -38,16 +39,27 @@ Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
         dataset = setData(d[0]);
         // CHANGE LATER?: initially, use chocolate as an attribute to group on
         //attribute = 'fruity';
-        attribute = 'chocolate';
-        //attribute = 'sugarPercent';
+        //attribute = 'chocolate';
+        attribute = 'sugarPercent';
         let currentData = groupByAttribute(dataset, attribute);
         createVisualization();
         updateVisualization(currentData);
     });
 
 function createVisualization() {
-    d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom]);
-    d3.select('#chart-content').attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+
+    // create a rectangle region that allows for lasso selection  
+    d3.select("#lasso-selectable-area rect")
+        .attr('fill', 'transparent')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', margin.top + height);
+
+    d3.select('#chart-content')
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.select('#x-axis-content')
+        .attr("transform", "translate(" + margin.left + "," + (margin.top + height) + ")");
 
 
 }
@@ -80,8 +92,8 @@ function updateVisualization(data) {
     unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)])
         .range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
 
-    d3.select('.x-axis').attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(xScale));
+    // add x-axis
+    d3.select('.x-axis').call(d3.axisBottom(xScale));
 
 
     // if the number of attributes are greater than arbitrary number 5, tilt the labels
@@ -91,7 +103,7 @@ function updateVisualization(data) {
             .style("text-anchor", "end");
 
     // Update data in the visualization
-    let elements = d3.selectAll(".unit-vis")
+    let elements = d3.selectAll("#chart-content .unit-vis")
         .selectAll('.unit')
         .data(data, d => d.id);
 
@@ -154,15 +166,14 @@ function updateVisualization(data) {
     d3.select('#x-axis-label')
         .text(attribute)
         .attr("x", width / 2)
-        .attr("y", height + margin.top + margin.bottom - 40)
+        .attr("y", margin.top + margin.bottom - 40)
         .attr("text-anchor", "middle")
         .attr("font-size", "0.9em")
     //.style("fill", 'dimgrey');
 
-
     // Enable Lasso selection for unit visualization -- for the svg and the units within it
-    lasso.targetArea(d3.select('#chart'))
-        .items(d3.selectAll('#chart .unit'));
+    lasso.targetArea(d3.select('#lasso-selectable-area'))
+        .items(d3.selectAll('#chart-content .unit'));
     d3.select("#chart").call(lasso);
 }
 
@@ -232,19 +243,24 @@ function setHandlers(name) {
     // Install event handlers for the given element
     const el = document.getElementById(name);
     el.onpointerdown = pointerdownHandler;
-    el.onpointermove = pointermoveHandler;
 
     // Use same handler for pointer{up,cancel,out,leave} events since
     // the semantics for these events - in this app - are the same.
-
     el.onpointerup = pointerupHandler;
     el.onpointercancel = pointerupHandler;
-    el.onpointerout = pointerupHandler;
+    //el.onpointerout = pointerupHandler; // moving to descendent (unit circles) triggers pointerout 
     el.onpointerleave = pointerupHandler;
+
+    // move handlers for different targets
+    if (name === 'lasso-selectable-area')
+        el.onpointermove = pinchZoomXY;
+    else if (name === 'x-axis-content')
+        el.onpointermove = pinchZoomX;
 }
 
 function init() {
-    setHandlers("content");
+    setHandlers("lasso-selectable-area");
+    setHandlers("x-axis-content");
 }
 
 function pointerdownHandler(ev) {
@@ -253,22 +269,24 @@ function pointerdownHandler(ev) {
     * mouse click counts as a pointerdown
     * */
     ev.preventDefault();
-    evCache.push(ev);
-    updateBackground(ev);
-}
-
-function pointermoveHandler(ev) {
-    ev.preventDefault();
-    // console.log('index: ', index);
-    // console.log('ev.clientX: ', ev.clientX);
-    // console.log('evCache[0].clientX: ', evCache[0].clientX);
-    // console.log('evCache[1].clientX: ', evCache[1].clientX);
-    pinchZoom(ev)
+    //evCache.push(ev);
+    pushEvent(ev);
     //updateBackground(ev);
-
 }
 
-function pinchZoom(ev) {
+function pinchZoomXY(ev) {
+    ev.preventDefault();
+    pinchZoom(ev, 'xy')
+    //updateBackground(ev);
+}
+
+function pinchZoomX(ev) {
+    ev.preventDefault();
+    pinchZoom(ev, 'x')
+    //updateBackground(ev);
+}
+
+function pinchZoom(ev, direction) {
     // This function implements a 2-pointer horizontal pinch/zoom gesture.
     //
     // If the distance between the two pointers has increased (zoom in),
@@ -279,24 +297,30 @@ function pinchZoom(ev) {
     // indicate the pointer's target received a move event.
 
     // Find this event in the cache and update its record with this event
-    const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
-    evCache[index] = ev;
+    const evCache = getCache(ev);
+    if (evCache && evCache.length === 2) {
+        const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+        evCache[index] = ev;
 
-    // If two pointers are down, check for pinch gestures
-    if (evCache.length === 2) {
+        // If two pointers are down, check for pinch gestures
         // Calculate the distance between the two pointers
-        const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
+        let curDiff = -1;
+        if (direction === 'xy') {
+            const x = evCache[1].clientX - evCache[0].clientX;
+            const y = evCache[1].clientY - evCache[0].clientY;
+            curDiff = Math.sqrt(x * x + y * y);
+        } else curDiff = evCache[1].clientX - evCache[0].clientX;
         //console.log('curDiff: ', curDiff);
         if (prevDiff > 0) {
             if (curDiff > prevDiff) {
                 // The distance between the two pointers has increased
                 //console.log("Pinch moving OUT -> Zoom in", ev);
-                ev.target.style.background = "plum";
+                ev.target.style.fill = "darkkhaki";
             }
             if (curDiff < prevDiff) {
                 // The distance between the two pointers has decreased
                 //console.log("Pinch moving IN -> Zoom out", ev);
-                ev.target.style.background = "aqua";
+                ev.target.style.fill = "aqua";
             }
         }
 
@@ -307,26 +331,59 @@ function pinchZoom(ev) {
 
 
 function pointerupHandler(ev) {
+    ev.preventDefault();
     // Remove this touch point from the cache and reset the target's
     // background and border
-    removeEvent(ev);
-    updateBackground(ev);
+
+    // // remove event only if it left its descendants too
+    // let cache = getCache(ev);
+    // const index = cache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+    // if (index != -1)
+    //     console.log('parent contains this', $(cache[index].target).has(ev.target).length)
+    //if ($(cache[index].target).has(ev.target).length)
+
+    let removedId = removeEvent(ev); // return the DOM element for which the removed event was a target of
+    //updateBackground(ev);
 
     // If the number of pointers down is less than two then reset diff tracker
-    if (evCache.length < 2) {
+    if (removedId === 'content' && evCacheContent.length < 2) {
         prevDiff = -1;
     }
 }
 
+function getCache(ev) {
+    // Return the cache for this event's target element
+    //console.log($('#x-axis-content').has(ev.target).length);
+    if ($('#evCacheXAxis').has(ev.target).length)
+        return evCacheXAxis;
+    else return evCacheContent;
+}
+
+function pushEvent(ev) {
+    // Save this event in the target's cache
+    const evCache = getCache(ev);
+    evCache.push(ev);
+}
+
 function removeEvent(ev) {
     // Remove this event from the target's cache
+    const evCache = getCache(ev);
+    const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+    evCache.splice(index, 1);
+    return getCache(ev);
+}
+
+
+function removeEvent(ev) {
+    // Remove this event from the target's cache
+    const evCache = getCache(ev);
     const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
 
     if (index > -1)
         evCache.splice(index, 1);
 
-    console.log('pointers: ', evCache.length);
-    updateBackground(ev);
+    console.log('pointers: ', evCacheContent.length);
+    //updateBackground(ev);
 }
 
 function updateBackground(ev) {
@@ -336,24 +393,24 @@ function updateBackground(ev) {
     //   yellow - one pointer down
     //   pink - two pointers down
     //   lightblue - three or more pointers down
-
+    const evCache = getCache(ev);
     switch (evCache.length) {
         //switch (ev.targetTouches.length) {
         case 0:
             // Target element has no touch points
-            ev.target.style.background = "white";
+            ev.target.style.fill = "white";
             break;
         case 1:
             // Single touch point
-            ev.target.style.background = "yellow";
+            ev.target.style.fill = "yellow";
             break;
         case 2:
             // Two simultaneous touch points
-            ev.target.style.background = "pink";
+            ev.target.style.fill = "pink";
             break;
         default:
             // Three or more simultaneous touches
-            ev.target.style.background = "lightblue";
+            ev.target.style.fill = "lightblue";
     }
 }
 

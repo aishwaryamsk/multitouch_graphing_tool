@@ -784,7 +784,6 @@ return d[d.length-1];};return ", funcName].join("")
             function dragstart() {
                 // Init coordinates
                 drawnCoords = [];
-
                 // Initialize paths
                 tpath = "";
                 dyn_path.attr("d",null);
@@ -816,10 +815,9 @@ return d[d.length-1];};return ", funcName].join("")
             function dragmove(e, d) {
                 // Get mouse position within body, used for calculations
 
-                //console.log(evCache)
                 // Allow only 1 pointer to trace the Lasso path
                 //if (e.identifier === 0) {
-                if (evCache.length == 1) {
+                if (evCacheContent.length == 1) {
                   var x,y;
 
                   if(e.sourceEvent.type === "touchmove") {
@@ -882,7 +880,7 @@ return d[d.length-1];};return ", funcName].join("")
                   });
 
                   on.draw();
-              } else if (evCache.length > 1) { // if more than 1 finger on screen
+              } else if (evCacheContent.length > 1) { // if more than 1 finger on screen
                 if (!origin_node.attr('display')) // erase the blue dot for start of lasso selection
                   origin_node.attr("display","none");
               }

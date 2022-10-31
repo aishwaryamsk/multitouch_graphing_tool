@@ -3,6 +3,10 @@
     overflow-y: scroll;
 }
 
+#lasso-selectable-area, #x-axis-content, circle {
+    pointer-events:"bounding-box";
+}
+
 /* Lasso selection */
 .lasso path {
     stroke: rgb(110, 110, 110);
