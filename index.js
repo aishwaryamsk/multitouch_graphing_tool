@@ -292,6 +292,7 @@ function doubleTapHandler(ev) {
     // detect pointer double taps on chart region
     detectOnePointerDoubleTap();
     detectTwoPointersDoubleTap();
+    detectMultiplePointersOnScreen();
 }
 
 function detectOnePointerDoubleTap() {
@@ -324,9 +325,21 @@ function detectTwoPointersDoubleTap() {
     // action to do on double tap
     if (twoPointersTappedTwice && evCacheContent.length === 2) {
         console.log('two pointer double tap');
-        
+
         // reset value for next double tap
         twoPointersTappedTwice = false;
+    }
+}
+
+// indicates whether there was multiples pointers on screen in the last 200 ms
+var multiplePtrsInLast400ms = false;
+
+function detectMultiplePointersOnScreen() {
+    // lasso will be behind by 400ms in case user uses a multiple pointer gesture followed by lasso selection within 400ms
+    if (!multiplePtrsInLast400ms && evCacheContent.length > 1) {
+        multiplePtrsInLast400ms = true; // this value holds only for 400 ms
+        setTimeout(function () { multiplePtrsInLast400ms = false; }, 400);
+        return false;
     }
 }
 
@@ -405,6 +418,8 @@ function pointerupHandler(ev) {
     if (removedId === 'content' && evCacheContent.length < 2) {
         prevDiff = -1;
     }
+    detectMultiplePointersOnScreen();
+    
 }
 
 function getCache(ev) {
