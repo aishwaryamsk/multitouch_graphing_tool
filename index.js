@@ -2,12 +2,14 @@ let width;
 let height;
 let margin = { top: 20, right: 30, bottom: 90, left: 30 };
 
-let xScale; // scale for labels on x-axis
-let unitXScale; // scale for unit vis on x-axis
+let xScale; // scale for labels on x-axis -- reference scale
+let unitXScale; // scale for unit vis on x-axis -- reference scale
 let unitYScale; // scale for unit vis on y-axis
 let xAxis;
+let numRowElements;
 
 let attribute = null;
+
 
 /* list of {data: {…}, attrs: {…}} 
 * store attributes (such as color, shape, atrribute that it's grouped with etc) for each data point
@@ -34,14 +36,6 @@ let prevDiff = -1; // for pinch-zoom -- any direction
 let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
-$(document).ready(function () {
-    height = window.innerHeight - margin.top - margin.bottom;
-    width = window.innerWidth - d3.select('#side-panel').node().getBoundingClientRect().width - margin.left - margin.right;
-    xScale = d3.scaleBand();
-    unitXScale = d3.scaleLinear();
-    unitYScale = d3.scaleLinear();
-});
-
 Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     .then(function (d) {
         dataset = setData(d[0]);
@@ -55,6 +49,14 @@ Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
     });
 
 function createVisualization() {
+    // Initialize variables
+    height = window.innerHeight - margin.top - margin.bottom;
+    width = window.innerWidth - d3.select('#side-panel').node().getBoundingClientRect().width - margin.left - margin.right;
+    xScale = d3.scaleBand();
+    unitXScale = d3.scaleLinear();
+    unitYScale = d3.scaleLinear();
+
+
     d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
 
     // create a rectangle region that allows for lasso selection  
@@ -69,17 +71,19 @@ function createVisualization() {
     d3.select('#x-axis-content')
         .attr("transform", "translate(" + margin.left + "," + (margin.top + height) + ")");
 
-
 }
+
+
 
 function updateVisualization(data) {
     console.log('zoomed')
     let unitVisPadding = 1.5; //pixels
 
     xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
+    xScaleW = xScale.copy();
 
     /* let the number of elements per row in each column be at least 1 */
-    let numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
+    numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
     numRowElements = numRowElements > 1 ? numRowElements : 1;
 
     /* x-scale of the attributes */
@@ -100,14 +104,17 @@ function updateVisualization(data) {
     unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)])
         .range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
 
+
     // add x-axis
-    xAxis = d3.axisBottom(xScale)
-    d3.select('.x-axis').call(xAxis);
+    xAxis = d3.axisBottom(xScale);
+    d3.select('.x-axis')
+        .call(xAxis);
 
 
     // if the number of attributes are greater than arbitrary number 5, tilt the labels
     if (Object.keys(attrValuesCount).length > 5)
-        d3.select('.x-axis').selectAll("text")
+        d3.select('.x-axis')
+            .selectAll("text")
             .attr("transform", "translate(-10,0)rotate(-45)")
             .style("text-anchor", "end");
 
@@ -183,7 +190,8 @@ function updateVisualization(data) {
     // Enable Lasso selection for unit visualization -- for the svg and the units within it
     lasso.targetArea(d3.select('#lasso-selectable-area'))
         .items(d3.selectAll('#chart-content .unit'));
-    d3.select("#chart").call(lasso).call(zoom);
+    d3.select("#chart").call(lasso);
+    d3.select("#chart").call(chartZoom);
 }
 
 /* Helper functions */
@@ -360,81 +368,41 @@ function pinchZoomX(ev) {
     //updateBackground(ev);
 }
 
-function initializeZoom() {
-    // set up the ancillary zooms and an accessor for their transforms
-    const zoomX = d3.zoom().scaleExtent([0.1, 10]);
-    const zoomY = d3.zoom().scaleExtent([0.2, 5]);
-    // const tx = () => d3.zoomTransform(gx.node());
-    // const ty = () => d3.zoomTransform(gy.node());
-    // gx.call(zoomX).attr("pointer-events", "none");
-    // gy.call(zoomY).attr("pointer-events", "none");
-}
-
-
-let zoom = d3.zoom()
-    .on('zoom', handleZoom2);
-//console.log('width', width)
-// let zoom = d3.zoom()
-//     .on('zoom', handleZoom)
-//     //.scaleExtent([1, 40])
-//     .translateExtent([[-100, -100], [width/2, height/2]]);
-//     //.translateExtent([[0, 0], [width + margin.left + margin.right, height + margin.top + margin.bottom]]);
+let chartZoom = d3.zoom()
+    .on('zoom', handleZoom);
 
 function handleZoom(e) {
-    console.log('zoom');
-    if (e.transform.x)
-        d3.select('#chart')
-            .attr('transform', e.transform);
-}
+    let gXAxis = d3.select('.x-axis');
+    let t = e.transform;
 
+    // transform x-axis g tag
+    gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
+    .attr('stroke-width', '0.05em');
+    // transform texts
+    gXAxis.selectAll("text")
+        .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} translate(-10,0) rotate(-45) `)
+        .style("text-anchor", "end");
 
+    // transform circles along x-axis only
+    d3.selectAll(".unit-vis circle")
+        .attr('transform', `translate(${t.x},0)`)
+        .attr("cx", function (d) {
+            if (attribute != null) {
+                if (numRowElements > 1) {
+                    // update the range of x-scale for unit vis to the x value of the column
+                    let bandwidth = xScale.bandwidth();
+                    unitXScale.range([xScale(String(d.data[attribute])),
+                    xScale(String(d.data[attribute])) + bandwidth]);
 
-
-// z holds a copy of the previous transform, so we can track its changes
-let z = d3.zoomIdentity;
-
-// set up the ancillary zooms and an accessor for their transforms
-const zoomX = d3.zoom().scaleExtent([0.1, 10]);
-const zoomY = d3.zoom().scaleExtent([0.2, 5]);
-const tx = () => d3.zoomTransform(gx.node());
-const ty = () => d3.zoomTransform(gy.node());
-
-let gx = d3.select('#x-axis');
-gx.call(zoomX)
-//.attr("pointer-events", "none");
-//gy.call(zoomY).attr("pointer-events", "none");
-
-function handleZoom2(e) {
-    const t = e.transform;
-    const k = t.k / z.k;
-    const point = center(e, this);
-
-    // is it on an axis? is the shift key pressed?
-    const doX = point[0] > unitXScale.range()[0];
-    const doY = point[1] < unitYScale.range()[0];
-    const shift = e.sourceEvent && e.sourceEvent.shiftKey;
-
-
-    //let gy = d3.select('#x-axis-content');
-    if (k === 1) {
-
-        // pure translation?
-        //doX && gx.call(zoomX.translateBy, (t.x - z.x) / tx().k, 0);
-        //gx.call(zoomX.translateBy, (t.x - z.x) / tx().k, 0);
-        gX.call(xAxis.scale(transform.rescaleX(unitXScale)));
-
-        //doY && gy.call(zoomY.translateBy, 0, (t.y - z.y) / ty().k);
-    } else {
-        console.log('k!=1')
-        // if not, we're zooming on a fixed point
-        doX && gx.call(zoomX.scaleBy, shift ? 1 / k : k, point);
-        //doY && gy.call(zoomY.scaleBy, k, point);
-    }
-
-    z = t;
-
-    //redraw();
-    //updateVisualization(currentData);
+                    return unitXScale((d.attrs.groupBy.order - 1) % numRowElements) * t.k;;
+                } else return xScale(String(d.data[attribute])) * t.k;
+            }
+        })
+        .attr("cy", function (d) {
+            if (attribute != null) {
+                return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
+            }
+        });
 }
 
 // center the action (handles multitouch)
