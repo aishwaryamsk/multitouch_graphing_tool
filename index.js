@@ -15,6 +15,9 @@ let attribute = null;
 * store attributes (such as color, shape, atrribute that it's grouped with etc) for each data point
 */
 let dataset = [];
+let columns = [];
+
+let isNumericScale = false;
 
 // Holds the current data displayed in the chart
 let currentData;
@@ -23,6 +26,7 @@ let currentData;
 let duration = 1;
 let circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
+let xAxesLabels = []; // labels of grouped attribute
 
 // selections
 let selection = []; // all selected unit vis
@@ -36,13 +40,24 @@ let prevDiff = -1; // for pinch-zoom -- any direction
 let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
-Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
-    .then(function (d) {
-        dataset = setData(d[0]);
+//Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
+Promise.all([d3.csv('dataset/candy-data.csv')])
+    .then(function (data) {
+        data[0].forEach(d => {
+            for (let attr in d) {
+                if (attr !== 'Candy')
+                    d[attr] = +d[attr];
+            }
+        });
+
+        dataset = setData(data[0]);
+        columns = data[0].columns;
         // CHANGE LATER?: initially, use chocolate as an attribute to group on
         //attribute = 'fruity';
-        //attribute = 'chocolate';
-        attribute = 'sugarPercent';
+        attribute = columns[11];
+        //attribute = 'sugarPercent';
+        //attribute = 'winPercent';
+        //attribute = 'pricePercent';
         currentData = groupByAttribute(dataset, attribute);
         createVisualization();
         updateVisualization(currentData);
@@ -52,7 +67,6 @@ function createVisualization() {
     // Initialize variables
     height = window.innerHeight - margin.top - margin.bottom;
     width = window.innerWidth - d3.select('#side-panel').node().getBoundingClientRect().width - margin.left - margin.right;
-    xScale = d3.scaleBand();
     unitXScale = d3.scaleLinear();
     unitYScale = d3.scaleLinear();
 
@@ -71,23 +85,39 @@ function createVisualization() {
     d3.select('#x-axis-content')
         .attr("transform", "translate(" + margin.left + "," + (margin.top + height) + ")");
 
+    // create a rectangluar region that clips everything outside it -- this is to show chart content that is only inside this region on zoom 
+    d3.select('#chart').append('defs')
+        .append('clipPath')
+        .attr('id', 'clipx')
+        .append('rect')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', width)
+        .attr('height', height);
 }
 
-
-
 function updateVisualization(data) {
-    console.log('zoomed')
     let unitVisPadding = 1.5; //pixels
+    setNumericScale()
+    // set the x scale based on type of data
+    if (isNumericScale) { // numeric scale
+        xScale = d3.scaleLinear();
+        let minMax = d3.extent(data, function (d) {
+            return d.data[attribute];
+        });
+        xScale.domain(minMax).range([0, width]); // takes number as input
+    } else { // categorical scale (yes/no)
+        xScale = d3.scaleBand();
+        xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
 
-    xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
-    xScaleW = xScale.copy();
+        // set number of elements in each column
+        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
+    }
 
     /* let the number of elements per row in each column be at least 1 */
-    numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
     numRowElements = numRowElements > 1 ? numRowElements : 1;
 
     /* x-scale of the attributes */
-
     unitXScale.domain([0, numRowElements]);
 
     let maxAttributeValueCount = Math.max(...Object.values(attrValuesCount));
@@ -106,17 +136,19 @@ function updateVisualization(data) {
 
 
     // add x-axis
-    xAxis = d3.axisBottom(xScale);
+    xAxis = d3.axisBottom(xScale).tickSize(4);
+
+    d3.select('.unit-vis')
+        .attr('clip-path', 'url(#clipx)');
+
     d3.select('.x-axis')
         .call(xAxis);
 
 
-    // if the number of attributes are greater than arbitrary number 5, tilt the labels
-    if (Object.keys(attrValuesCount).length > 5)
+    if (!isNumericScale)
         d3.select('.x-axis')
             .selectAll("text")
-            .attr("transform", "translate(-10,0)rotate(-45)")
-            .style("text-anchor", "end");
+            .text((d, i) => xAxesLabels[i]);
 
     // Update data in the visualization
     let elements = d3.selectAll("#chart-content .unit-vis")
@@ -132,9 +164,8 @@ function updateVisualization(data) {
                     let bandwidth = xScale.bandwidth();
                     unitXScale.range([xScale(String(d.data[attribute])),
                     xScale(String(d.data[attribute])) + bandwidth]);
-
                     return unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
-                } else return xScale(String(d.data[attribute]));
+                } else return xScale(d.data[attribute]); // numeric scale
             }
         })
         .attr("cy", function (d) {
@@ -154,9 +185,8 @@ function updateVisualization(data) {
                     bandwidth = xScale.bandwidth();
                     unitXScale.range([xScale(String(d.data[attribute])),
                     xScale(String(d.data[attribute])) + bandwidth]);
-
                     return unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
-                } else return xScale(String(d.data[attribute]));
+                } else return xScale(d.data[attribute]); // numeric scale
             }
         })
         .attr("cy", function (d) {
@@ -211,6 +241,12 @@ function groupByAttribute(data, attribute) {
     attrValuesCount = {};
     for (let attr_value of attrValues) {
         attrValuesCount[attr_value] = 0;
+    }
+
+    // Hard-coded for candy dataset --> eg: 0 for no chocolate, 1 for chocolate
+    if (Object.keys(attrValuesCount).length === 2) {
+        xAxesLabels[0] = `No ${attribute}`;
+        xAxesLabels[1] = `${attribute}`;
     }
 
     // keep count of element's occurrence in each attribute value and store for grouping
@@ -369,21 +405,34 @@ function pinchZoomX(ev) {
 }
 
 let chartZoom = d3.zoom()
-    .on('zoom', handleZoom);
+    .on('zoom', zoomed);
 
-function handleZoom(e) {
-    let gXAxis = d3.select('.x-axis');
+function zoomed(e) {
     let t = e.transform;
+    let gXAxis = d3.select('.x-axis');
+    const point = center(e, this);
 
-    // transform x-axis g tag
-    gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
-    .attr('stroke-width', '0.05em');
-    // transform texts
-    gXAxis.selectAll("text")
-        .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} translate(-10,0) rotate(-45) `)
-        .style("text-anchor", "end");
+    // is it on an axis? is the shift key pressed?
+    const doX = point[0] > unitXScale.range()[0];
 
+    if (isNumericScale) {
+        // numeric scale
+        // create new scale oject based on event
+        var new_xScale = t.rescaleX(xScale);
+        // update axes
+        //doX && gXAxis.call(xAxis.scale(new_xScale));
+        gXAxis.call(xAxis.scale(new_xScale));
+    } else {
+        // categorical scale
+        // transform x-axis g tag
+        gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
+            .attr('stroke-width', '0.05em');
+        // transform texts
+        gXAxis.selectAll("text")
+            .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
+    }
     // transform circles along x-axis only
+    // update circles
     d3.selectAll(".unit-vis circle")
         .attr('transform', `translate(${t.x},0)`)
         .attr("cx", function (d) {
@@ -403,7 +452,14 @@ function handleZoom(e) {
                 return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
             }
         });
+};
+
+function setNumericScale() {
+    if (['Win Percent', 'Sugar Percent', 'Price Percent'].includes(attribute))
+        isNumericScale = true;
+    else isNumericScale = false;
 }
+
 
 // center the action (handles multitouch)
 function center(event, target) {
@@ -592,11 +648,11 @@ function lassoEnd() {
 
     /* the radius of possible points (which becomes selected now) will remain as 'circleRadius'.
     So, only update the radius of unselected points. */
-    // lasso.selectedItems()
-    //     .classed("selected", true);
-    // lasso.notSelectedItems()
-    //     .classed("selected", false)
-    //     .attr('r', circleRadius); // reset radius of unselected points
+    lasso.selectedItems()
+        .classed("selected", true);
+    lasso.notSelectedItems()
+        .classed("selected", false)
+        .attr('r', circleRadius); // reset radius of unselected points
 };
 
 function unselectPoints() {
