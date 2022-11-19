@@ -220,8 +220,7 @@ function updateVisualization(data) {
     // Enable Lasso selection for unit visualization -- for the svg and the units within it
     lasso.targetArea(d3.select('#lasso-selectable-area'))
         .items(d3.selectAll('#chart-content .unit'));
-    d3.select("#chart").call(lasso);
-    d3.select("#chart").call(chartZoom);
+    d3.select("#chart").call(lasso).call(chartZoom);
 }
 
 /* Helper functions */
@@ -334,10 +333,6 @@ function doubleTapHandler(ev) {
     * mouse hover won't be a pointerdown
     * mouse click counts as a pointerdown
     * */
-    //evCache.push(ev);
-    //pushEvent(ev);
-    //updateBackground(ev);
-    //console.log(evCacheContent)
     // detect pointer double taps on chart region
     detectOnePointerDoubleTap();
     detectTwoPointersDoubleTap();
@@ -345,6 +340,7 @@ function doubleTapHandler(ev) {
 }
 
 function detectOnePointerDoubleTap() {
+
     // within 300 milli seconds of a single tap and it was not a double tap previously
     if (!onePointerTappedTwice && evCacheContent.length === 1 && !twoPointersTappedTwice) {
         onePointerTappedTwice = true;
@@ -373,6 +369,8 @@ function detectTwoPointersDoubleTap() {
     }
     // action to do on double tap
     if (twoPointersTappedTwice && evCacheContent.length === 2) {
+        resetZoom();
+
         console.log('two pointer double tap');
 
         // reset value for next double tap
@@ -410,10 +408,6 @@ let chartZoom = d3.zoom()
 function zoomed(e) {
     let t = e.transform;
     let gXAxis = d3.select('.x-axis');
-    const point = center(e, this);
-
-    // is it on an axis? is the shift key pressed?
-    const doX = point[0] > unitXScale.range()[0];
 
     if (isNumericScale) {
         // numeric scale
@@ -454,20 +448,19 @@ function zoomed(e) {
         });
 };
 
+function resetZoom() {
+    let chart = d3.select("#chart");
+    chart.transition().duration(750).call(
+        chartZoom.transform,
+        d3.zoomIdentity,
+        d3.zoomTransform(chart.node()).invert([width / 2, height / 2])
+    );
+}
+
 function setNumericScale() {
     if (['Win Percent', 'Sugar Percent', 'Price Percent'].includes(attribute))
         isNumericScale = true;
     else isNumericScale = false;
-}
-
-
-// center the action (handles multitouch)
-function center(event, target) {
-    if (event.sourceEvent) {
-        const p = d3.pointers(event, target);
-        return [d3.mean(p, d => d[0]), d3.mean(p, d => d[1])];
-    }
-    return [width / 2, height / 2];
 }
 
 function pinchZoom(ev, direction) {
@@ -493,7 +486,6 @@ function pinchZoom(ev, direction) {
             const x = evCache[1].clientX - evCache[0].clientX;
             const y = evCache[1].clientY - evCache[0].clientY;
             curDiff = Math.sqrt(x * x + y * y);
-            zoom
         } else curDiff = evCache[1].clientX - evCache[0].clientX;
         //console.log('curDiff: ', curDiff);
         if (prevDiff > 0) {
