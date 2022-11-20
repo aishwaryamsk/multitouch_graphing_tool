@@ -21,6 +21,7 @@ let isNumericScale = false;
 
 // Holds the current data displayed in the chart
 let currentData;
+let curDataAttrs = {};
 
 // settings
 let duration = 1;
@@ -40,28 +41,42 @@ let prevDiff = -1; // for pinch-zoom -- any direction
 let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
-//Promise.all([d3.csv('dataset/candy-data.csv', candyRow)])
-Promise.all([d3.csv('dataset/candy-data.csv')])
-    .then(function (data) {
-        data[0].forEach(d => {
-            for (let attr in d) {
-                if (attr !== 'Candy')
-                    d[attr] = +d[attr];
-            }
-        });
+// user preferences
+let useCustomIcons = true;
+let imgSVGs = [];
 
-        dataset = setData(data[0]);
-        columns = data[0].columns;
-        // CHANGE LATER?: initially, use chocolate as an attribute to group on
-        //attribute = 'fruity';
-        attribute = columns[11];
-        //attribute = 'sugarPercent';
-        //attribute = 'winPercent';
-        //attribute = 'pricePercent';
-        currentData = groupByAttribute(dataset, attribute);
-        createVisualization();
-        updateVisualization();
+let array = [d3.csv('dataset/candy-data.csv'), d3.xml('images/candy.svg')]
+Promise.all(array).then(function (data1) {
+
+    let imgSVG = data1[1];
+    let svgNode = imgSVG.getElementsByTagName("svg")[0];
+    d3.select(svgNode)
+        .attr('height', 18)
+        .attr('width', 18)
+        .style('fill', 'plum');
+    imgSVGs.push(svgNode);
+
+    let data = data1;
+    data[0].forEach(d => {
+        for (let attr in d) {
+            if (attr !== 'Candy')
+                d[attr] = +d[attr];
+        }
     });
+
+    dataset = setData(data[0]);
+    columns = data[0].columns;
+    // CHANGE LATER?: initially, use chocolate as an attribute to group on
+    //attribute = 'fruity';
+    //attribute = columns[11];
+    attribute = columns[1];
+    //attribute = 'sugarPercent';
+    //attribute = 'winPercent';
+    //attribute = 'pricePercent';
+    currentData = groupByAttribute(dataset, attribute);
+    createVisualization();
+    updateVisualization();
+});
 
 function createVisualization() {
     // Initialize variables
@@ -92,11 +107,16 @@ function createVisualization() {
         .append('rect')
         .attr('x', -10)
         .attr('y', 0)
-        .attr('width', width+20)
+        .attr('width', width + 20)
         .attr('height', height);
 }
 
-function updateVisualization() {
+async function updateVisualization() {
+    /* try {
+        let imgSVG = await getImgSVG();
+    } catch (err) {
+        console.log(err);
+    } */
     let unitVisPadding = 1.5; //pixels
     setNumericScale()
     // set the x scale based on type of data
@@ -121,7 +141,7 @@ function updateVisualization() {
     unitXScale.domain([0, numRowElements]);
 
     let maxAttributeValueCount = Math.max(...Object.values(attrValuesCount));
-    let unitVisHtMargin = 10;
+    let unitVisHtMargin = 18;
 
     /* if (numRowElements > 1) {
         let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
@@ -152,6 +172,7 @@ function updateVisualization() {
 
     // Update data in the visualization
     updateUnitViz();
+    //updateUnitVizIcons();
 
     // update elements
     /* elements.transition().duration(duration)
@@ -217,33 +238,118 @@ function updateVisualization() {
     d3.select("#chart").call(lasso).call(chartZoom);
 }
 
+function getImgSVG() {
+    return new Promise((resolve, reject) => function () {
+        d3.xml("/images/candy.svg").then(data => {
+            console.log(data)
+            imgSVG = data;
+            resolve(imgSVG);
+            //d3.select("#svg-container").node().append(data.documentElement)
+        });
+    })
+
+}
+
+function updateImgSVG() {
+    //imgSVG.style('stroke', 'pink').attr('fill', 'pink');
+}
+var did_it_once = false;
 function updateUnitViz(tx = 1, tk = 1) {
-    d3.selectAll("#chart-content .unit-vis")
+
+    let units = d3.selectAll("#chart-content .unit-vis")
         .selectAll('.unit')
-        .data(currentData, d => d.id)
-        .join("path")
-        .attr("class", "unit")
-        .attr("d", d => d.attrs.shape)
-        .attr('transform', function (d) {
-            let x, y;
-            if (attribute != null) {
-                if (numRowElements > 1) {
-                    // update the range of x-scale for unit vis to the x value of the column
-                    bandwidth = xScale.bandwidth();
-                    unitXScale.range([xScale(String(d.data[attribute])),
-                    xScale(String(d.data[attribute])) + bandwidth]);
-                    x = unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
-                } else {
-                    x = xScale(d.data[attribute]); // numeric scale
-                }
-                y = unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
-            }
-            return `translate(${tx+(x*tk)}, ${y})`;
-        })
-        .style('fill', d => d.attrs.color);
+        .data(currentData, d => d.id);
+
+    if (useCustomIcons) {
+        let svgs = units.join("g") //image
+            .attr("class", "unit")
+            .attr("id", (d, i) => `unit-icon-${i}`)
+            //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
+            // .attr("d", function (d) {
+            //     let node = document.importNode('/images/candy.svg', true);
+            //})
+            .attr('transform', d => plotXY(d, tx, tk))
+
+        if (d3.select('.unit svg').empty()) {
+            // create
+            svgs.each(function (d) {
+                // clones whole subtree -- has to be cloned for each instance of the candy
+                let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
+                /* d3.select(s).style('fill', curDataAttrs[d.id].color); */
+                //this.append(imgSVGs[curDataAttrs[d.id].imgSvgId].cloneNode(true));
+                this.append(s.cloneNode(true));
+            });
+        }
+        /* svgs.selectAll('.path-icon') //paths worked
+           .data(paths.nodes())
+           .join("path")
+           .attr('class', 'path-icon')
+           .attr("d", function (d) {
+               return d3.select(d).attr('d');
+           })
+           .attr("stroke", function (d) {
+               return d3.select(d).attr('stroke');
+           })
+           .attr("stroke-width", function (d) {
+               return d3.select(d).attr('stroke-width');
+           })
+           .attr("stroke-linecap", function (d) {
+               return d3.select(d).attr('stroke-linecap');
+           })
+           .attr("fill", function (d) {
+               return d3.select(d).attr('fill');
+           }) */
+
+    } else {
+        units.join("path")
+            .attr("class", "unit")
+            .attr('d', d => curDataAttrs[d.id].shape)
+            .style('fill', d => curDataAttrs[d.id].color)
+            .attr('transform', d => plotXY(d, tx, tk));
+    }
+}
+
+function plotXY(d, tx = 1, tk = 1) {
+    let x, y;
+    if (attribute != null) {
+        let order = curDataAttrs[d.id]['groupBy'].order;
+        if (numRowElements > 1) {
+            // update the range of x-scale for unit vis to the x value of the column
+            bandwidth = xScale.bandwidth();
+            unitXScale.range([xScale(String(d.data[attribute])),
+            xScale(String(d.data[attribute])) + bandwidth]);
+            x = unitXScale((order - 1) % numRowElements);
+        } else {
+            x = xScale(d.data[attribute]); // numeric scale
+        }
+        y = unitYScale(Math.floor((order - 1) / numRowElements));
+    }
+    return `translate(${tx + (x * tk)}, ${y})`;
 }
 
 /* Helper functions */
+function readFile(e) {
+    let file = document.querySelector('input[type=file]').files[0];
+    let reader = new FileReader();
+    reader.onload = (e) => {
+        importImgSVG(e.target.result);
+    }
+    reader.readAsText(file);
+}
+
+function importImgSVG(data) {
+    let parser = new DOMParser();
+    let imgSVG = parser.parseFromString(data, "image/svg+xml");
+    
+
+    let svgNode = imgSVG.getElementsByTagName("svg")[0];
+    d3.select(svgNode)
+        .attr('height', 18)
+        .attr('width', 18)
+        .style('fill', 'plum');
+    imgSVGs.push(svgNode);
+    console.log('imgSVG', imgSVGs);
+}
 
 /* Allow users to filter by only 1 attribute at a time? */
 function groupByAttribute(data, attribute) {
@@ -271,7 +377,7 @@ function groupByAttribute(data, attribute) {
     // keep count of element's occurrence in each attribute value and store for grouping
     for (let dataPt of data) {
         attrValuesCount[dataPt.data[attribute]]++;
-        dataPt.attrs['groupBy'] = {
+        curDataAttrs[dataPt.id]['groupBy'] = {
             'column': attrValues.indexOf(dataPt.data[attribute]),
             'order': attrValuesCount[dataPt.data[attribute]]
         };
@@ -282,7 +388,9 @@ function groupByAttribute(data, attribute) {
 function setData(d) {
     let i = 0;
     for (let dataPt of d) {
-        dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape() } });
+        //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
+        dataset.push({ id: i, data: dataPt });
+        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0 };
         i++;
     }
     return dataset;
@@ -324,10 +432,10 @@ function setHandlers(name) {
     el.onpointerleave = pointerupHandler;
 
     // move handlers for different targets
-    if (name === 'lasso-selectable-area')
+    /* if (name === 'lasso-selectable-area')
         el.onpointermove = pinchZoomXY;
     else if (name === 'x-axis-content')
-        el.onpointermove = pinchZoomX;
+        el.onpointermove = pinchZoomX; */
 }
 
 function init() {
@@ -410,7 +518,7 @@ function detectMultiplePointersOnScreen() {
     }
 }
 
-function pinchZoomXY(ev) {
+/* function pinchZoomXY(ev) {
     ev.preventDefault();
     pinchZoom(ev, 'xy')
     //updateBackground(ev);
@@ -420,7 +528,7 @@ function pinchZoomX(ev) {
     ev.preventDefault();
     pinchZoom(ev, 'x')
     //updateBackground(ev);
-}
+} */
 
 let chartZoom = d3.zoom()
     .on('zoom', zoomed);
@@ -434,7 +542,6 @@ function zoomed(e) {
         // create new scale oject based on event
         var new_xScale = t.rescaleX(xScale);
         // update axes
-        //doX && gXAxis.call(xAxis.scale(new_xScale));
         gXAxis.call(xAxis.scale(new_xScale));
     } else {
         // categorical scale
@@ -463,7 +570,7 @@ function setNumericScale() {
         isNumericScale = true;
     else isNumericScale = false;
 }
-
+/*
 function pinchZoom(ev, direction) {
     // This function implements a 2-pointer horizontal pinch/zoom gesture.
     //
@@ -506,20 +613,12 @@ function pinchZoom(ev, direction) {
         prevDiff = curDiff;
     }
 }
-
+*/
 
 function pointerupHandler(ev) {
     ev.preventDefault();
     // Remove this touch point from the cache and reset the target's
     // background and border
-
-    // // remove event only if it left its descendants too
-    // let cache = getCache(ev);
-    // const index = cache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
-    // if (index != -1)
-    //     console.log('parent contains this', $(cache[index].target).has(ev.target).length)
-    //if ($(cache[index].target).has(ev.target).length)
-
     let removedId = removeEvent(ev); // return the DOM element for which the removed event was a target of
     //updateBackground(ev);
 
@@ -528,7 +627,6 @@ function pointerupHandler(ev) {
         prevDiff = -1;
     }
     detectMultiplePointersOnScreen();
-
 }
 
 function getCache(ev) {
@@ -549,50 +647,21 @@ function removeEvent(ev) {
     // Remove this event from the target's cache
     const evCache = getCache(ev);
     const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
-    evCache.splice(index, 1);
+    //evCache.splice(index, 1);
+    if (index > -1)
+        evCache.splice(index, 1);
     return getCache(ev);
 }
 
 
-function removeEvent(ev) {
+/* function removeEvent(ev) {
     // Remove this event from the target's cache
     const evCache = getCache(ev);
     const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
 
     if (index > -1)
         evCache.splice(index, 1);
-
-    console.log('pointers: ', evCacheContent.length);
-    //updateBackground(ev);
-}
-
-function updateBackground(ev) {
-    // Change background color based on the number of simultaneous touches/pointers
-    // currently down:
-    //   white - target element has no touch points i.e. no pointers down
-    //   yellow - one pointer down
-    //   pink - two pointers down
-    //   lightblue - three or more pointers down
-    const evCache = getCache(ev);
-    switch (evCache.length) {
-        //switch (ev.targetTouches.length) {
-        case 0:
-            // Target element has no touch points
-            ev.target.style.fill = "white";
-            break;
-        case 1:
-            // Single touch point
-            ev.target.style.fill = "yellow";
-            break;
-        case 2:
-            // Two simultaneous touch points
-            ev.target.style.fill = "pink";
-            break;
-        default:
-            // Three or more simultaneous touches
-            ev.target.style.fill = "lightblue";
-    }
-}
+} */
 
 
 
