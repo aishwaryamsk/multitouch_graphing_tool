@@ -43,6 +43,8 @@ let twoPointersTappedTwice = false;
 
 // user preferences
 let useCustomIcons = true;
+let iconSize = 2 * circleRadius; //default
+let unitVisHtMargin = iconSize;
 let imgSVGs = [];
 
 let array = [d3.csv('dataset/candy-data.csv'), d3.xml('images/candy.svg')]
@@ -51,9 +53,10 @@ Promise.all(array).then(function (data1) {
     let imgSVG = data1[1];
     let svgNode = imgSVG.getElementsByTagName("svg")[0];
     d3.select(svgNode)
-        .attr('height', 18)
-        .attr('width', 18)
+        .attr('height', 20)
+        .attr('width', 20)
         .style('fill', 'plum');
+    iconSize = 20;
     imgSVGs.push(svgNode);
 
     let data = data1;
@@ -111,7 +114,7 @@ function createVisualization() {
         .attr('height', height);
 }
 
-async function updateVisualization() {
+function updateVisualization() {
     /* try {
         let imgSVG = await getImgSVG();
     } catch (err) {
@@ -141,7 +144,7 @@ async function updateVisualization() {
     unitXScale.domain([0, numRowElements]);
 
     let maxAttributeValueCount = Math.max(...Object.values(attrValuesCount));
-    let unitVisHtMargin = 18;
+    unitVisHtMargin = iconSize;
 
     /* if (numRowElements > 1) {
         let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
@@ -340,7 +343,7 @@ function readFile(e) {
 function importImgSVG(data) {
     let parser = new DOMParser();
     let imgSVG = parser.parseFromString(data, "image/svg+xml");
-    
+
 
     let svgNode = imgSVG.getElementsByTagName("svg")[0];
     d3.select(svgNode)
