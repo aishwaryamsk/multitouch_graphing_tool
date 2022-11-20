@@ -60,7 +60,7 @@ Promise.all([d3.csv('dataset/candy-data.csv')])
         //attribute = 'pricePercent';
         currentData = groupByAttribute(dataset, attribute);
         createVisualization();
-        updateVisualization(currentData);
+        updateVisualization();
     });
 
 function createVisualization() {
@@ -90,19 +90,19 @@ function createVisualization() {
         .append('clipPath')
         .attr('id', 'clipx')
         .append('rect')
-        .attr('x', 0)
+        .attr('x', -10)
         .attr('y', 0)
-        .attr('width', width)
+        .attr('width', width+20)
         .attr('height', height);
 }
 
-function updateVisualization(data) {
+function updateVisualization() {
     let unitVisPadding = 1.5; //pixels
     setNumericScale()
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
-        let minMax = d3.extent(data, function (d) {
+        let minMax = d3.extent(currentData, function (d) {
             return d.data[attribute];
         });
         xScale.domain(minMax).range([0, width]); // takes number as input
@@ -151,12 +151,10 @@ function updateVisualization(data) {
             .text((d, i) => xAxesLabels[i]);
 
     // Update data in the visualization
-    let elements = d3.selectAll("#chart-content .unit-vis")
-        .selectAll('.unit')
-        .data(data, d => d.id);
+    updateUnitViz();
 
     // update elements
-    elements.transition().duration(duration)
+    /* elements.transition().duration(duration)
         .attr("cx", function (d) {
             if (attribute != null) {
                 if (numRowElements > 1) {
@@ -172,10 +170,10 @@ function updateVisualization(data) {
             if (attribute != null) {
                 return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
             }
-        });
+        }); */
 
     // add new elements
-    elements.enter()
+    /* elements.enter()
         .append("circle")
         .attr("class", "unit")
         .attr("cx", function (d) {
@@ -192,21 +190,17 @@ function updateVisualization(data) {
         .attr("cy", function (d) {
             if (attribute != null) {
                 //return unitYScale(d.attrs.groupBy.order);
-                /* if (numRowElements > 1) {
-                    return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
-                } else return unitYScale(d.attrs.groupBy.order); */
-
                 return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
             }
         })
         .attr('r', circleRadius)
-        .style('fill', d => d.attrs.color);
+        .style('fill', d => d.attrs.color); 
 
     // remove elements
     elements.exit()
         .transition().duration(duration)
         .attr("r", 0)
-        .remove();
+        .remove(); */
 
     // Update x-axis label
     d3.select('#x-axis-label')
@@ -221,6 +215,32 @@ function updateVisualization(data) {
     lasso.targetArea(d3.select('#lasso-selectable-area'))
         .items(d3.selectAll('#chart-content .unit'));
     d3.select("#chart").call(lasso).call(chartZoom);
+}
+
+function updateUnitViz(tx = 1, tk = 1) {
+    d3.selectAll("#chart-content .unit-vis")
+        .selectAll('.unit')
+        .data(currentData, d => d.id)
+        .join("path")
+        .attr("class", "unit")
+        .attr("d", d => d.attrs.shape)
+        .attr('transform', function (d) {
+            let x, y;
+            if (attribute != null) {
+                if (numRowElements > 1) {
+                    // update the range of x-scale for unit vis to the x value of the column
+                    bandwidth = xScale.bandwidth();
+                    unitXScale.range([xScale(String(d.data[attribute])),
+                    xScale(String(d.data[attribute])) + bandwidth]);
+                    x = unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
+                } else {
+                    x = xScale(d.data[attribute]); // numeric scale
+                }
+                y = unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
+            }
+            return `translate(${tx+(x*tk)}, ${y})`;
+        })
+        .style('fill', d => d.attrs.color);
 }
 
 /* Helper functions */
@@ -262,7 +282,7 @@ function groupByAttribute(data, attribute) {
 function setData(d) {
     let i = 0;
     for (let dataPt of d) {
-        dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd' } });
+        dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape() } });
         i++;
     }
     return dataset;
@@ -426,26 +446,7 @@ function zoomed(e) {
             .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
     }
     // transform circles along x-axis only
-    // update circles
-    d3.selectAll(".unit-vis circle")
-        .attr('transform', `translate(${t.x},0)`)
-        .attr("cx", function (d) {
-            if (attribute != null) {
-                if (numRowElements > 1) {
-                    // update the range of x-scale for unit vis to the x value of the column
-                    let bandwidth = xScale.bandwidth();
-                    unitXScale.range([xScale(String(d.data[attribute])),
-                    xScale(String(d.data[attribute])) + bandwidth]);
-
-                    return unitXScale((d.attrs.groupBy.order - 1) % numRowElements) * t.k;;
-                } else return xScale(String(d.data[attribute])) * t.k;
-            }
-        })
-        .attr("cy", function (d) {
-            if (attribute != null) {
-                return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
-            }
-        });
+    updateUnitViz(t.x, t.k);
 };
 
 function resetZoom() {
