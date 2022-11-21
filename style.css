@@ -99,7 +99,7 @@ header{
 /* From Aishwarya's code */
 
 #side-panel {
-    position: fixed;
+    position: absolute;
     border-right: 0.1em solid lightgrey;
     overflow-y: scroll;
 }

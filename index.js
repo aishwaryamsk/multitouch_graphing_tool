@@ -100,9 +100,7 @@ function createVisualization() {
 
     //d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
     d3.select("svg#chart")
-    .attr('height', height + margin.top + margin.bottom-2)
-    .attr('width', width + margin.left + margin.right-2)
-    //.attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+    .attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
 
     // create a rectangle region that allows for lasso selection  
     d3.select("#lasso-selectable-area rect")
