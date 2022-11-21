@@ -53,9 +53,9 @@ Promise.all(array).then(function (data1) {
     let imgSVG = data1[1];
     let svgNode = imgSVG.getElementsByTagName("svg")[0];
     d3.select(svgNode)
-        .attr('height', 20)
-        .attr('width', 20)
-        .style('fill', 'plum');
+        .attr('height', 18)
+        .attr('width', 18)
+        .style('fill', 'brown');
     iconSize = 20;
     imgSVGs.push(svgNode);
 
@@ -77,6 +77,15 @@ Promise.all(array).then(function (data1) {
     //attribute = 'winPercent';
     //attribute = 'pricePercent';
     currentData = groupByAttribute(dataset, attribute);
+    
+
+    // Niv
+    cols = Object.keys(dataset[0].data)
+    overview(dataset.length, cols.length);
+    tabulate(dataset, cols);
+    createAccordion(dataset, cols);
+    createDropDown(dataset, cols);
+
     createVisualization();
     updateVisualization();
 });
@@ -89,7 +98,11 @@ function createVisualization() {
     unitYScale = d3.scaleLinear();
 
 
-    d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+    //d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+    d3.select("svg#chart")
+    .attr('height', height + margin.top + margin.bottom-2)
+    .attr('width', width + margin.left + margin.right-2)
+    //.attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
 
     // create a rectangle region that allows for lasso selection  
     d3.select("#lasso-selectable-area rect")
@@ -104,7 +117,7 @@ function createVisualization() {
         .attr("transform", "translate(" + margin.left + "," + (margin.top + height) + ")");
 
     // create a rectangluar region that clips everything outside it -- this is to show chart content that is only inside this region on zoom 
-    d3.select('#chart').append('defs')
+    d3.select('svg#chart').append('defs')
         .append('clipPath')
         .attr('id', 'clipx')
         .append('rect')
@@ -256,7 +269,7 @@ function getImgSVG() {
 function updateImgSVG() {
     //imgSVG.style('stroke', 'pink').attr('fill', 'pink');
 }
-var did_it_once = false;
+
 function updateUnitViz(tx = 1, tk = 1) {
 
     let units = d3.selectAll("#chart-content .unit-vis")
@@ -723,4 +736,121 @@ function lassoEnd() {
 function unselectPoints() {
     lasso.notSelectedItems()
         .attr('r', circleRadius); // reset radius of unselected points
+}
+
+
+
+
+
+
+
+/* Niveditha */
+function tabulate(data, cols) {
+    var table = d3.select("#thetablebody").append("table").attr("class", "table table-striped");
+    var head = table.append("thead")
+    var body = table.append("tbody")
+
+    console.log("columns", cols);
+    head.append("tr")
+        .selectAll("th")
+        .data(cols)
+        .enter()
+        .append("th")
+        .text((d) => (d[0].toUpperCase() + d.slice(1)))
+
+    var tr = body.selectAll("tr")
+        .data(data)
+        .enter()
+        .append("tr")
+
+    tr.selectAll("td")
+        .data((d) => Object.values(d['data']))
+        .enter()
+        .append("td")
+        .text((d) => d) //[0].toUpperCase() + d.slice(1));
+}
+
+function createAccordion(data, cols) {
+    // var acc = d3.select("#pill-overview")
+    //             .append("div")
+    //             .attr("class", "accordion")
+    //             .attr("id", "dim");
+
+    var accitem = d3.select("#dim")
+        .selectAll("div")
+        .data(cols)
+        .enter()
+        .append("div")
+        .attr("class", "accordion-item");
+
+    accitem.append("h2")
+        .attr("class", "accordion-header")
+        .attr("id", (d) => "acc-heading-" + d)
+        .append("button")
+        .attr("class", "accordion-button collapsed")
+        .attr("type", "button")
+        .attr("data-mdb-toggle", "collapse")
+        .attr("data-mdb-target", (d) => "#acc-" + d)
+        .attr("aria-controls", (d) => "acc-" + d)
+        .attr("aria-expanded", "false")
+        .text((d) => (d[0].toUpperCase() + d.slice(1)))
+
+    accitem.append("div")
+        .attr("class", "accordion-collapse collapse")
+        .attr("id", (d) => "acc-" + d)
+        .attr("data-mdb-target", (d) => "#dim")
+        .append("div")
+        .attr("class", "accordion-body")
+        .text((d) => stats(data, d));
+
+}
+
+function createDropDown(data, cols) {
+    var id;
+    for (let i = 1; i <= 5; i++) {
+
+        id = "#dropdown-menu" + i;
+
+        d3.select(id)
+            .selectAll("li")
+            .data(cols)
+            .enter()
+            .append("li")
+            .append("a")
+            .attr("class", "dropdown-item")
+            .text((d) => (d[0].toUpperCase() + d.slice(1)))
+
+    }
+}
+
+function stats(data, colname) {
+    var list_items = data.map((d) => d['data'][colname])
+
+    console.log("list", typeof (list_items[0]))
+
+    if (typeof (list_items[0]) == "string") {
+        return "Number of items: " + list_items.length;
+    } else {
+
+        var total = 0;
+        var count = 0;
+        list_items.forEach(element => {
+            total += element;
+            count++;
+        });
+        return "Average: " + Math.round(total / count * 100) / 100;
+    }
+}
+
+function overview(rows, columns) {
+    d3.select("#overview_num").text("The dataset has " + rows + " rows and " + columns + " columns.");
+    d3.select("#overview").text("The columns are");
+}
+
+/* document.getElementById("colorPicker").addEventListener("input", function(){
+    setData(dataset);
+})  */
+
+function updateColor(color) {
+    console.log(color);
 }

@@ -1,0 +1,101 @@
+<!DOCTYPE html >
+<html lang="en">
+
+<head>
+	<title>Javascript MDBootstrap List Group Component</title>
+	<meta charset="UTF-8" />
+	<meta name="viewport"
+		content="width=device-width,
+				initial-scale=1,
+				shrink-to-fit=no" />
+	<!-- <link rel="icon" href="img/mdb-favicon.ico"	type="image/x-icon" /> -->
+	<link rel="stylesheet" href= "https://use.fontawesome.com/releases/v5.15.2/css/all.css" />
+	<link rel="stylesheet" href= "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.0/mdb.min.css" />
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.0/mdb.min.js"></script>
+</head>
+
+<body>
+	<h2 style="margin-left: 50px;
+			margin-top: 50px;">
+		GeeksforGeeks
+	</h2>
+	<h4 style="margin-left: 50px;">
+		MDBootstrap Javascript Accordion Component
+	</h4>
+	<div class="accordion"
+		id="gfg"
+		style="width: 1250px;
+				margin-left: 50px;">
+		<div class="accordion-item">
+			<h2 class="accordion-header"
+				id="headingOne">
+			<button
+			class="accordion-button"
+			type="button"
+			data-mdb-toggle="collapse"
+			data-mdb-target="#gfg1"
+			aria-controls="gfg1">
+			Accordion 1
+			</button>
+		</h2>
+			<div id="gfg1"
+				class="accordion-collapse collapse show"
+				data-mdb-parent="#gfg">
+				<div class="accordion-body">
+				MDBootstrap is a Material Design and bootstrap-based
+				Angular UI library that is used to make good looking
+				webpages with its seamless and easy-to-use
+				component. It is free for both personal & commercial use
+			</div>
+		</div>
+		</div>
+		<div class="accordion-item">
+			<h2 class="accordion-header" id="headingTwo">
+			<button
+			class="accordion-button collapsed"
+			type="button"
+			data-mdb-toggle="collapse"
+			data-mdb-target="#gfg2"
+			aria-expanded="false"
+			aria-controls="gfg2">
+			Accordion 2
+			</button>
+		</h2>
+			<div id="gfg2"
+				class="accordion-collapse collapse"
+				data-mdb-parent="#gfg">
+				<div class="accordion-body">
+					MDBootstrap is a Material Design and bootstrap-based
+					Angular UI library that is used to make good looking
+					webpages with its seamless and easy-to-use
+					component. It is free for both personal & commercial use
+				</div>
+			</div>
+		</div>
+		<div class="accordion-item">
+			<h2 class="accordion-header">
+			<button
+			class="accordion-button collapsed"
+			type="button"
+			data-mdb-toggle="collapse"
+			data-mdb-target="#gfg3"
+			aria-expanded="false"
+			aria-controls="gfg3">
+			Accordion 3
+			</button>
+		</h2>
+			<div id="gfg3"
+				class="accordion-collapse collapse"
+				data-mdb-parent="#gfg">
+				<div class="accordion-body">
+					MDBootstrap is a Material Design and bootstrap-based
+					Angular UI library that is used to make good looking
+					webpages with its seamless and easy-to-use
+					component. It is free for both personal & commercial use
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
