@@ -844,7 +844,7 @@ function stats(data, colname) {
 
 function overview(rows, columns) {
     d3.select("#overview_num").text("The dataset has " + rows + " rows and " + columns + " columns.");
-    d3.select("#overview").text("The columns are");
+    d3.select("#overview").text("Data Attributes");
 }
 
 /* document.getElementById("colorPicker").addEventListener("input", function(){
