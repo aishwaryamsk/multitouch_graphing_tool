@@ -51,7 +51,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = false;
+let useCustomIcons = true;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
@@ -1232,18 +1232,20 @@ function changeSizeByCol(colname, min, max) {
 }
 
 function changeColor(newColor) {
-    console.log("changing color", currentData.length);
-    console.log(selection);
     if (selection) {
-        selection.data().forEach(d => {
-            curDataAttrs[d.id].color = 'pink';
-        });
-        updateVisualization();
+        if (useCustomIcons) {
+            selection.data().forEach(d => {
+                let id = d.id;
+                curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+                curDataAttrs[id].color = newColor;
+                d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
+            });
+        } else d3.selectAll(selection).style('fill', newColor);
+        
     } else {
         d3.selectAll('.unit').style('fill', newColor);
-        d3.selectAll("#shapes svg path").style('fill', newColor);
     }
-    //d3.selectAll('.unit')
+    d3.selectAll("#shapes svg path").style('fill', newColor);
 }
 
 function changeSize(newSize) {
