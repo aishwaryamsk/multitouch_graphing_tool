@@ -1,4 +1,4 @@
-html, body, .container{
+html, body{
     height: 100%;
 }
 
@@ -6,10 +6,19 @@ html, body, .container{
     background-color: rgb(135, 124, 108);
 }
 
-header{
+#heading{
+    height: 8vh !important;
+    background-color: #90a9cf;
+}
+
+#details{
+    height: 90vh !important;
+}
+/* 
+#side-panel-top{
     height: 6vh;
     background-color: #e3ebf7;
-}
+} */
 
 .scrollable-content{
     position: relative;
@@ -143,4 +152,42 @@ header{
 .selected {
     stroke: black;
     stroke-width: 2px;
+}
+
+#colorPicker, #imgInput{
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/* #pick-text, #upload-text, #range-text, #double-range-slider{
+    position:relative;
+    top:10px;
+} */
+
+.btn-secondary{
+    background-color: white;
+    color: black;
+    margin-top: 10px;
+}
+
+.irs--flat .irs-bar{
+    background-color: #0d6efd;
+}
+
+.irs--flat .irs-from, .irs--flat .irs-to, .irs--flat .irs-single{
+    background-color: #0d6efd;
+}
+
+.irs--flat .irs-handle > i:first-child {
+    background-color: #0d6efd;
+}
+
+#pill-overview-tab, #pill-chart-tab, #pill-details-tab{
+    height: 50px;
+    margin-bottom: 10px;
+}
+
+h6{
+    font-weight: bold;
+    margin-top: 10px;
 }

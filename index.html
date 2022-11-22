@@ -19,9 +19,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
         integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
         crossorigin="anonymous"></script>
+        
+    <!-- jQuery -->
+    <script src='https://code.jquery.com/jquery-3.6.0.min.js'
+        integrity='sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=' crossorigin='anonymous'></script>
 
     <!-- d3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script> -->
 
     <!-- Bootstrap icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
@@ -30,165 +35,223 @@
     <script src="./library/d3-lasso/d3-lasso.js"></script>
 
     <!-- MDB -->
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" />
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.0/mdb.min.css" />
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.0/mdb.min.js"></script>
+    <!-- <link rel="stylesheet" href= "https://use.fontawesome.com/releases/v5.15.2/css/all.css" />
+	<link rel="stylesheet" href= "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.0/mdb.min.css" />
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.0/mdb.min.js"></script> -->
 
-    <!-- jQuery -->
-    <script src='https://code.jquery.com/jquery-3.6.0.min.js'
-        integrity='sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=' crossorigin='anonymous'></script>
+    <!--Plugin CSS file with desired skin-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.3.1/css/ion.rangeSlider.min.css"/>
+
+    <!--jQuery-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    
+    <!--Plugin JavaScript file-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.3.1/js/ion.rangeSlider.min.js"></script>
+    
 
     <!-- Custom CSS and JS -->
     <link rel="stylesheet" href="./style.css">
-
+    
     <script type='text/javascript' src='shapes.js'></script>
     <!-- <script>jQuery.noConflict();</script> -->
     <script type='text/javascript' src='index.js'></script>
 
 </head>
-
 <body onload="init();" style="touch-action:none">
-    <!-- <header>Icecream flavors</header> -->
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script> -->
+
+    <!-- <header>Halloween Candies</header> -->
     <div class="container">
-        <div class='row'>
-            <div id='side-panel' class='col-4 col'>
-                <div id="side-container" class="container">
-                    <!-- <div id="side-panel-left" class="col-1 col" -->
-                    <div id="side-panel-left" class="col"
-                        style="padding-left: 18px; padding-right: 18px; padding-top:18px">
-                        <div class="nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
-                            <a class="nav-link active" id="pill-overview-tab" data-bs-toggle="pill"
-                                href="#pill-overview" role="tab" aria-controls="pill-overview" aria-selected="true">
-                                <i class="fas fa-home fa-2x"></i>
-                            </a>
+        
+
+    <!-- </div> h-100 d-flex flex-column"> -->
+        
+        <div class='row' id = "details">
+            <div id='side-panel' class='col-3 col'>
+                <div id = "side-container" class="container">
+                    <!-- <div id = "heading" class="row"></div> -->
+                    <div id = "side-panel-left" class="col-1 col" style="padding-left: 18px; padding-right: 18px; padding-top:18px">
+                        <!-- <div class="nav flex-column nav-pills" role = "tablist" aria-orientation="vertical"> -->
+                        <ul class="nav flex-column nav-pills" role = "tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id = "pill-overview-tab" data-bs-toggle = "pill" href = "#pill-overview" role="tab" aria-controls="pill-overview" aria-selected = "true">
+                                    <!-- <i class="fas fa-home fa-2x"></i> -->
+                                    <span class="bi-table"></span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                             <!-- <a class="nav-link" id = "pill-table-tab" data-bs-toggle = "pill" href = "#pill-table" role="tab" aria-controls="pill-table" aria-selected = "false">
                                 <i class="fas fa-table fa-2x"></i>
                             </a> -->
-                            <a class="nav-link" id="pill-chart-tab" data-bs-toggle="pill" href="#pill-chart" role="tab"
-                                aria-controls="pill-chart" aria-selected="false">
-                                <i class="fas fa-chart-pie fa-2x"></i>
-                            </a>
-                        </div>
+                                <button class="nav-link" id = "pill-chart-tab" data-bs-toggle = "pill" href = "#pill-chart" role="tab" aria-controls="pill-chart" aria-selected = "false">
+                                    <!-- <i class="fas fa-chart-pie fa-2x"></i> -->
+                                    <span class="bi-ui-radios-grid"></span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id = "pill-details-tab" data-bs-toggle = "pill" href = "#pill-details" role="tab" aria-controls="pill-details" aria-selected = "false">
+                                    <!-- <i class="fas fa-chart-pie fa-2x"></i> -->
+                                    <span class="bi-info-square"></span>
+                                </button>
+                            </li>
+                        </ul> 
+                        <!-- </div> -->
                     </div>
-                    <!-- <div id="side-panel-right" class="col-11 col" style="padding-right: 18px;"> -->
-                    <div id="side-panel-right" class="col" style="padding-right: 18px;">
+                    <div id = "side-panel-right" class="col-11 col" style="padding-right: 18px;">
                         <div class="tab-content" style="
                         padding-right: 10px;
                         padding-bottom: 20px;">
-                            <div class="tab-pane fade show active" id="pill-overview" role="tabpanel"
-                                aria-labelledby="pill-overview-tab">
-                                <div class="scrollable-content">
-
+                            <div class="tab-pane fade show active" id = "pill-overview" role="tabpanel" aria-labelledby="pill-overview-tab">
+                                <h3>Table overview</h3>   
+                                <div class="scrollable-content">                                
                                     <div id="overview_num"></div>
-                                    <button type="button" id="btn-raw" class="btn btn-primary" data-mdb-toggle="modal"
-                                        data-mdb-target="#rawdata">
-                                        View raw data
+                                    <button type="button"
+                                        id="btn-raw"
+                                        class="btn btn-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#rawdata">
+                                    View raw data
                                     </button>
-                                    <div id="overview"></div>
-                                    <div class="modal fade" id="rawdata" tabindex="-1" role="dialog"
-                                        aria-labelledby="rawtablelabel" aria-hidden="true">
+                                    <div id = "overview"></div> 
+                                    <div class="modal" id = "rawdata" tabindex="-1">
+                                    <!-- role="dialog" aria-labelledby="rawtablelabel" aria-hidden="true"> -->
                                         <div class="modal-dialog modal-dialog-scrollable">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title" id="rawtablelabel">Dataset: Halloween Candies
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-mdb-dismiss="modal"
-                                                        aria-label="Close">
+                                                    <h5 class="modal-title" id = "rawtablelabel">Dataset: Icecream flavors</h5>
+                                                    <button type="button" class="btn-close" 
+                                                        data-bs-dismiss="modal" aria-label="Close">
                                                     </button>
                                                 </div>
                                                 <div class="modal-body">
-                                                    <div id="thetablebody"></div>
+                                                    <div id = "thetablebody"></div>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary"
-                                                        data-mdb-dismiss="modal">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                                         Close
                                                     </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div id="dim" class="accordion"></div>
-                                </div>
+                                        </div>                                
+                                    </div>  
+                                    <div id = "dim" class="accordion"></div>                              
+                                </div>                   
                             </div>
                             <!-- <div class="tab-pane fade" id = "pill-table" role="tabpanel" aria-labelledby="pill-table-tab">                                
                             </div> -->
-                            <div class="tab-pane fade" id="pill-chart" role="tabpanel" aria-labelledby="pill-chart-tab">
+                            <div class="tab-pane fade" id = "pill-chart" role="tabpanel" aria-labelledby="pill-chart-tab">   
+                                <h3>Edit glyphs</h3>  
+                                <div class="scrollable-content">                                     
+                                    <ul class="list-group list-group-light">
+                                        <li class="list-group-item">
+                                            <div class="dropdown">
+                                                <h6 class="glyph-property">X Axis</h6>
+                                                <button class="btn btn-secondary dropdown-toggle glyph-buttons"
+                                                    type="button"
+                                                    id="dropdownMenuButton1"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false">
+                                                    
+                                                </button>
+                                                <ul id = "dropdown-menu1" class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
+                                                </ul>
 
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" checked>
+                                                        <label class="form-check-label" for="flexRadioDefault1">
+                                                            Given order
+                                                        </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2">
+                                                        <label class="form-check-label" for="flexRadioDefault2">
+                                                            Reverse order
+                                                        </label>
+                                                </div>
+                                            </div>  
+                                        </li>
+                                        <li class="list-group-item">    
+                                            <div class="dropdown">
+                                                <h6 class="glyph-property">Color</h6>
+                                                <!-- <button class="btn btn-secondary dropdown-toggle glyph-buttons"
+                                                    type="button"
+                                                    id="dropdownMenuButton3"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false">
+                                                    
+                                                </button> -->
+                                                <ul id = "dropdown-menu3" class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton3">
+                                                    <!-- <li><a class="dropdown-item">Item 1</a></li> -->
+                                                </ul>
+                                                <p id ="pick-text"><i>Change color: </i></p>
+                                                <input type="color" class="form-control form-control-color" id = "colorPicker" value="#874612"/> 
+                                                <!-- onchange="alert(this.value)" /> -->
+                                            </div> 
+                                        </li>    
+                                        <li class="list-group-item">    
+                                            <div class="dropdown">
+                                                <h6 class="glyph-property">Shape</h6>
+                                                <!-- <button class="btn btn-secondary dropdown-toggle glyph-buttons"
+                                                    type="button"
+                                                    id="dropdownMenuButton4"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false">
+                                                    
+                                                </button> -->
+                                                <p id ="upload-text"><i>Choose a shape: </i></p>
+                                                <div id = "shapes"></div>
+                                                </br>
+                                                <input id='imgInput' type="file" id="imgFile" name="imgFilename" onchange="readFile()">
+                                            </div> 
+                                        </li>  
+                                        <li class="list-group-item">    
+                                            <div class="dropup">
+                                                <h6 class="glyph-property">Size</h6>
+                                                <button class="btn btn-secondary dropdown-toggle glyph-buttons"
+                                                    type="button"
+                                                    id="dropdownMenuButton5"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false">
+                                                    
+                                                </button>
+                                                <ul id = "dropdown-menu5" class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton5">
+                                                    <!-- <li><a class="dropdown-item">Item 1</a></li> -->
+                                                </ul>
+                                                <p id ="range-text"><i>Change size: </i></p>
+                                                <input type="range" class="form-range" id="pickSize" min="10" max="40">
+                                                <!-- <input type="text" id="single-range-slider" name="my_range" value="" /> -->
+                                            </div> 
+                                        </li> 
+                                        <li class="list-group-item">    
+                                            <div class="dropup" id = "filter-item">
+                                                <h6 class="glyph-property">Filter</h6>
+                                                <button class="btn btn-secondary dropdown-toggle glyph-buttons"
+                                                    type="button"
+                                                    id="dropdownMenuButton7"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false">
+                                                    
+                                                </button>
+                                                <ul id = "dropdown-menu7" class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton7">
+                                                    <!-- <li><a class="dropdown-item">Item 1</a></li> -->
+                                                </ul>
+                                                <div id = "double-slider">
+                                                    <!-- <p id ="range-text"><i>Choose range: </i></p>                                                     -->
+                                                    <!-- <input type="text" id="double-range-slider" name="my_range" value="" /> -->
+                                                </div>                                                 
+                                            </div> 
+                                        </li> 
+                                    </ul>
+                                </div>             
+                            </div>
+                            <div class="tab-pane fade" id = "pill-details" role="tabpanel" aria-labelledby="pill-details-tab">     
+
+                                <h3>Aggregate data</h3> 
                                 <ul class="list-group list-group-light">
-                                    <li class="list-group-item">
-                                        <div class="dropdown">
-                                            <span class="glyph-property">X Axis</span>
-                                            <button class="btn btn-secondary dropdown-toggle glyph-buttons"
-                                                type="button" id="dropdownMenuButton" data-mdb-toggle="dropdown"
-                                                aria-expanded="false">
-                                                Column
-                                            </button>
-                                            <ul id="dropdown-menu1" class="dropdown-menu dropdown-menu-end"
-                                                aria-labelledby="dropdownMenuButton">
-                                                <!-- <li><a class="dropdown-item">Item 1</a></li> -->
-                                            </ul>
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <div class="dropdown">
-                                            <span class="glyph-property">Y Axis</span>
-                                            <button class="btn btn-secondary dropdown-toggle glyph-buttons"
-                                                type="button" id="dropdownMenuButton" data-mdb-toggle="dropdown"
-                                                aria-expanded="false">
-                                                Column
-                                            </button>
-                                            <ul id="dropdown-menu2" class="dropdown-menu dropdown-menu-end"
-                                                aria-labelledby="dropdownMenuButton">
-                                                <!-- <li><a class="dropdown-item">Item 1</a></li> -->
-                                            </ul>
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <div class="dropdown">
-                                            <span class="glyph-property">Color</span>
-                                            <button class="btn btn-secondary dropdown-toggle glyph-buttons"
-                                                type="button" id="dropdownMenuButton" data-mdb-toggle="dropdown"
-                                                aria-expanded="false">
-                                                Column
-                                            </button>
-                                            <ul id="dropdown-menu3" class="dropdown-menu dropdown-menu-end"
-                                                aria-labelledby="dropdownMenuButton">
-                                                <!-- <li><a class="dropdown-item">Item 1</a></li> -->
-                                            </ul>
-                                            <input type="color" class="form-control form-control-color" id="colorPicker"
-                                                value="#000000" title="Pick a color">
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <div class="dropdown">
-                                            <span class="glyph-property">Shape</span>
-                                            <button class="btn btn-secondary dropdown-toggle glyph-buttons"
-                                                type="button" id="dropdownMenuButton" data-mdb-toggle="dropdown"
-                                                aria-expanded="false">
-                                                Column
-                                            </button>
-                                            <ul id="dropdown-menu4" class="dropdown-menu dropdown-menu-end"
-                                                aria-labelledby="dropdownMenuButton">
-                                                <!-- <li><a class="dropdown-item">Item 1</a></li> -->
-                                            </ul>
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <div class="dropdown">
-                                            <span class="glyph-property">Size</span>
-                                            <button class="btn btn-secondary dropdown-toggle glyph-buttons"
-                                                type="button" id="dropdownMenuButton" data-mdb-toggle="dropdown"
-                                                aria-expanded="false">
-                                                Column
-                                            </button>
-                                            <ul id="dropdown-menu5" class="dropdown-menu dropdown-menu-end"
-                                                aria-labelledby="dropdownMenuButton">
-                                                <!-- <li><a class="dropdown-item">Item 1</a></li> -->
-                                            </ul>
-                                        </div>
+                                    <li class="list-group-item" id = "selection">
                                     </li>
                                 </ul>
                             </div>
@@ -196,7 +259,7 @@
                     </div>
                 </div>
             </div>
-            <div id='main-panel' class='col-8 col'>
+            <div id='main-panel' class='col-9 col'>   
                 <svg id="chart">
                     <g id='lasso-selectable-area'>
                         <rect></rect>
@@ -208,11 +271,10 @@
                         <g class='x-axis'></g>
                         <text id='x-axis-label'></text>
                     </g>
-                </svg>
+                </svg>         
             </div>
         </div>
     </div>
 
 </body>
-
 </html>

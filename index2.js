@@ -7,36 +7,30 @@ let unitXScale; // scale for unit vis on x-axis -- reference scale
 let unitYScale; // scale for unit vis on y-axis
 let xAxis;
 let numRowElements;
+let tip;
 
 let attribute = null;
-
 let tooltipTriggerList;
 let col_values;
 let col_types;
 
-let tip;
-
-let cols_lower, cols;
-let all_shapes = [squareShape, triangleShape, circleShape, crossShape, diamondShape, starShape, wyeShape]
 
 /* list of {data: {…}, attrs: {…}} 
 * store attributes (such as color, shape, atrribute that it's grouped with etc) for each data point
 */
 let dataset = [];
 let columns = [];
-
 let isNumericScale = false;
 
 // Holds the current data displayed in the chart
-let currentData = [];
-let allData = []; // holds all attributes
+let currentData;
 let curDataAttrs = {};
 
 // settings
 let duration = 1;
-let circleRadius = 7;
+var circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
-let sortedAxisLabels; // keeps sorted order of atrributes on x axis
+let xAxesLabels = []; // labels of grouped attribute
 
 // selections
 let selection = []; // all selected unit vis
@@ -51,21 +45,26 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = false;
+let useCustomIcons = true;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
-let attrSortOder = 0; // 0: ascending, 1: descending
+let currSize = 20;
 
 let array = [d3.csv('dataset/candy-data.csv'), d3.xml('images/candy.svg')]
+
+let cols_lower, cols;
+let all_shapes = [squareShape, triangleShape, circleShape, crossShape, diamondShape, starShape, wyeShape]
+// console.log("shapes", all_shapes);
+
 Promise.all(array).then(function (data1) {
 
     let imgSVG = data1[1];
     let svgNode = imgSVG.getElementsByTagName("svg")[0];
     d3.select(svgNode)
-        .attr('height', 18)
-        .attr('width', 18)
-        .style('fill', 'brown');
+        .attr('height', 20)
+        .attr('width', 20)
+        .style('fill', "#874612");
     iconSize = 20;
     imgSVGs.push(svgNode);
 
@@ -77,64 +76,39 @@ Promise.all(array).then(function (data1) {
         }
     });
 
-    dataset = data[0];
-    allData = setData(data[0]).slice();
+    dataset = setData(data[0]);
     columns = data[0].columns;
-
-
-    for (let i = 0; i < 7; i++) {
-        d3.select("#shapes")
-            .append("svg")
-            .attr("width", "20")
-            .attr("height", "20")
-            .append("path")
-            .attr("class", "pickShape")
-            .style("cursor", "pointer")
-            .attr("id", (d) => "shape-" + i)
-            .attr("d", all_shapes[i])
-            .attr("fill", "#874612")
-            .attr("transform", "translate(10, 10)")
-            .on('pointerdown', function (e, d) {
-                // console.log("att", e['target']['id']);
-                findShape(e['target']['id']);
-            })
-    }
-
-
+    console.log("cols", columns)
     // CHANGE LATER?: initially, use chocolate as an attribute to group on
     //attribute = 'fruity';
-    //attribute = columns[11];
-    attribute = columns[1];
-    //attribute = columns[0];
-    //attribute = 'sugarPercent';
-    //attribute = 'winPercent';
-    //attribute = 'pricePercent';
-    setNumericScale();
-    groupByAttribute(currentData, attribute);
+    // attribute = columns[10];
+    visualize(11);
+    
+    for (let i=0; i<7; i++){
+        d3.select("#shapes")
+        .append("svg")
+        .attr("width", "20")
+        .attr("height", "20")
+        .append("path")
+        .attr("class", "pickShape")
+        .style("cursor", "pointer")
+        .attr("id", (d) => "shape-"+i)
+        .attr("d", all_shapes[i])
+        .attr("fill", "#874612")
+        .attr("transform", "translate(10, 10)")
+        .on('pointerdown', function(e,d){
+            // console.log("att", e['target']['id']);
+            findShape(e['target']['id']);
+        })
+    }
 
-
-    // Niv
-    cols = Object.keys(allData[0].data);
-    col_values = Object.values(allData[0].data)
-    col_types = col_values.map((d) => typeof (d));
-
-    overview(allData.length, cols.length);
-    tabulate(allData, cols);
-    createAccordion(allData, cols);
-    createDropDown(allData, cols);
-
-
-
-    //cols = Object.keys(currentData[0].data);
-    //visualize(11); //groupByAttribute, create, update
-    createVisualization();
-    updateVisualization();
-
-    /* filterData(columns[11], 0, 0.5);
-    filterData(columns[11], 0, 0.2); */
-
-    //updateXAttribute(columns[2]);
-    //updateXAttribute(columns[11]);
+    cols = Object.keys(dataset[0].data)
+    col_values = Object.values(dataset[0].data)
+    col_types = col_values.map((d) => typeof(d));
+    overview(dataset.length, cols.length);
+    tabulate(dataset, cols);
+    createAccordion(dataset, cols);
+    createDropDown(dataset, cols);
 
     document.querySelector("#colorPicker").onchange = e => {
         // console.log(e.target.value);
@@ -151,23 +125,24 @@ Promise.all(array).then(function (data1) {
         .text(attribute);
 
     d3.selectAll("#dropdownMenuButton3,#dropdownMenuButton4,#dropdownMenuButton5,#dropdownMenuButton6,#dropdownMenuButton7")
-        .text("None");
-
+        .text("None");     
+        
     d3.select('#x-axis-label')
         .text(attribute);
 
     tooltipTriggerList = [].slice.call(
         document.querySelectorAll('[data-toggle="tooltip"]')
-    );
-
+        );
+        
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
+        });
+          
     d3.select("#selection")
         .append("xhtml:body")
         .attr("id", "selection-text")
         .html("<br>Lasso-select datapoints to view stats.<br>")
+
 });
 
 function createVisualization() {
@@ -178,9 +153,9 @@ function createVisualization() {
     unitYScale = d3.scaleLinear();
 
 
-    //d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+    // d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
     d3.select("svg#chart")
-        .attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+    .attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
 
     // create a rectangle region that allows for lasso selection  
     d3.select("#lasso-selectable-area rect")
@@ -212,7 +187,7 @@ function updateVisualization() {
         console.log(err);
     } */
     let unitVisPadding = 1.5; //pixels
-    setNumericScale();
+    setNumericScale()
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -222,14 +197,7 @@ function updateVisualization() {
         xScale.domain(minMax).range([0, width]); // takes number as input
     } else { // categorical scale (yes/no)
         xScale = d3.scaleBand();
-
-        // determine order of columns
-        if (attrSortOder === 0)
-            sortedAxisLabels.sort((a, b) => a.attrName.localeCompare(b.attrName));
-        else sortedAxisLabels.sort((a, b) => b.attrName.localeCompare(a.attrName));
-
-        //xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
-        xScale.domain(sortedAxisLabels.map(d => d.attrValue)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
+        xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
 
         // set number of elements in each column
         numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
@@ -263,40 +231,24 @@ function updateVisualization() {
         .attr('clip-path', 'url(#clipx)');
 
     d3.select('.x-axis')
-        .call(xAxis)
-        .style("font-size", "1em");
+        .call(xAxis);
 
-    if (sortedAxisLabels.length > 5) {
-        d3.select('.x-axis')
-            .selectAll('text')
-            .attr("transform", "rotate(-45)")
-            .style("text-anchor", "end")
-        if (sortedAxisLabels.length > 30) {
-            d3.select('.x-axis')
-                .style("font-size", "0.5em");
-        }
-    }
-
-    let attrs = sortedAxisLabels.map(function (d, i) {
-        return d.attrName;
-    });
 
     if (!isNumericScale)
         d3.select('.x-axis')
             .selectAll("text")
-            //.text((d, i) => xAxesLabels[i]);
-            .text((d, i) => attrs[i]);
+            .text((d, i) => xAxesLabels[i]);
 
     // Update data in the visualization
     updateUnitViz();
 
     // Update x-axis label
     d3.select('#x-axis-label')
-        .text(attribute)
+        // .text(attribute)
         .attr("x", width / 2)
         .attr("y", margin.top + margin.bottom - 40)
         .attr("text-anchor", "middle")
-        .attr("font-size", "1.2em")
+        .attr("font-size", "0.9em")
     //.style("fill", 'dimgrey');
 
     // Enable Lasso selection for unit visualization -- for the svg and the units within it
@@ -305,184 +257,71 @@ function updateVisualization() {
     d3.select("#chart").call(lasso).call(chartZoom);
 }
 
+function getImgSVG() {
+    return new Promise((resolve, reject) => function () {
+        d3.xml("/images/candy.svg").then(data => {
+            console.log(data)
+            imgSVG = data;
+            resolve(imgSVG);
+            //d3.select("#svg-container").node().append(data.documentElement)
+        });
+    })
+
+}
+
 function updateImgSVG() {
     //imgSVG.style('stroke', 'pink').attr('fill', 'pink');
 }
 
+// var did_it_once = false;
 function updateUnitViz(tx = 1, tk = 1) {
 
     let units = d3.selectAll("#chart-content .unit-vis")
         .selectAll('.unit')
         .data(currentData, d => d.id);
-    //.data(currentData);
 
     if (useCustomIcons) {
-        // let svgs = units.join("g") //image
-        //     .attr("class", "unit")
-        //     //.attr("id", (d, i) => `unit-icon-${i}`)
-        //     //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
-        //     // .attr("d", function (d) {
-        //     //     let node = document.importNode('/images/candy.svg', true);
-        //     //})
-        //     .attr('transform', d => plotXY(d, tx, tk))
-
-
-
-        let svgs = units.enter()
-            .append("g") //image
+        let svgs = units.join("g") //image
             .attr("class", "unit")
             .attr("id", (d, i) => `unit-icon-${i}`)
-            .attr('transform', d => plotXY(d, tx, tk))
-
-        svgs.merge(units)
-            .attr('transform', d => plotXY(d, tx, tk))
-
-        units.exit().remove();
-
+            .attr("data-toggle", "tooltip")
+            .attr("data-placement", "top")
+            .attr("title", (d, i) => d['data']['Candy'])
+            //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
+            // .attr("d", function (d) {
+            //     let node = document.importNode('/images/candy.svg', true);
+            //})
+            .attr('transform', d => plotXY(d, tx, tk));
 
         if (d3.select('.unit svg').empty()) {
             // create
             svgs.each(function (d) {
                 // clones whole subtree -- has to be cloned for each instance of the candy
-                let s = imgSVGs[curDataAttrs[d.id].imgSvgId]
-                let id = d.id;
-                d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
-                this.append(s.cloneNode(true))
-                //.attr('id', id);
-
+                let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
+                /* d3.select(s).style('fill', curDataAttrs[d.id].color); */
+                //this.append(imgSVGs[curDataAttrs[d.id].imgSvgId].cloneNode(true));
+                this.append(s.cloneNode(true));
             });
-        } else if (!d3.select('.unit svg').empty()) {
-            //console.log(d3.selectAll('.unit svg'))
-            // d3.selectAll('.unit svg').each(function(d){
-            //     console.log(d);
-            // })
-            // .style('fill', function(d) { 
-            //     console.log(d)
-            //     //return curDataAttrs[d.id].color
-            // });
-            // d3.selectAll(`.unit ${id}`).style('fill', d => curDataAttrs[d.id].color);
         }
-        /* svgs.selectAll('.path-icon') //paths worked
-           .data(paths.nodes())
-           .join("path")
-           .attr('class', 'path-icon')
-           .attr("d", function (d) {
-               return d3.select(d).attr('d');
-           })
-           .attr("stroke", function (d) {
-               return d3.select(d).attr('stroke');
-           })
-           .attr("stroke-width", function (d) {
-               return d3.select(d).attr('stroke-width');
-           })
-           .attr("stroke-linecap", function (d) {
-               return d3.select(d).attr('stroke-linecap');
-           })
-           .attr("fill", function (d) {
-               return d3.select(d).attr('fill');
-           }) */
-
     } else {
+        // console.log("color", color)
         units.join("path")
             .attr("class", "unit")
             .attr('d', d => curDataAttrs[d.id].shape)
             .style('fill', d => curDataAttrs[d.id].color)
             .attr('transform', d => plotXY(d, tx, tk));
-
-        // units.join("g")
-        //     .attr("class", "unit")
-
-        // //units.join('path')
-        // .append('path')
-        //     .attr("class", "shape-path")
-        //     .attr('d', d => curDataAttrs[d.id].shape)
-        //     .style('fill', d => curDataAttrs[d.id].color)
-        //     .attr('transform', d => plotXY(d, tx, tk));
-
-        // //exit.remove();
-        // // add new g's and paths to g's
-        // console.log(currentData)
-        // console.log(curDataAttrs)
-        // console.log(units.enter())
-
-        // let newGs = units.enter()
-        //     .append('g')
-        //     .attr("class", "unit")
-
-        // //newGs.merge(units)
-
-        // newGs.append('path')
-        //     .attr('d', d => curDataAttrs[d.id].shape)
-        //     .style('fill', d => curDataAttrs[d.id].color)
-        //     .attr('transform', d => plotXY(d, tx, tk));
-
-        // newGs.merge(units)
-        //     .selectAll('path')
-        //     .attr('d', d => curDataAttrs[d.id].shape)
-        //     .style('fill', d => curDataAttrs[d.id].color)
-        //     .attr('transform', d => plotXY(d, tx, tk));
-
-        // units.exit().remove();
-
-        // let elements = units.join("g")
-        //     .attr("class", "unit")
-        //     .attr('transform', d => plotXY(d, tx, tk))
-
-        //     // .join("path")
-        //     // .attr('d', function(d) {
-        //     //     console.log(d)
-        //     //     return curDataAttrs[d.id].shape
-        //     // })
-        // console.log(elements)
-
-        // elements.each(function(d) {
-        //     console.log(this);
-        //     console.log(d3.select(this));
-        //     d3.select(this)
-        //     .append('path')
-        //     .attr('d', function(y) {
-        //         return curDataAttrs[d.id].shape;
-        //     })
-
-        // })
-
-        //console.log(elements);
-        //elements
-        //d3.selectAll('.unit .d-path')
-        // elements.selectAll('.d-path')
-        // //.data(d)
-        // .data(currentData, d => d.id)
-        // // .enter()
-        // // .append('path')
-        // .join("path")
-        // .attr('class', 'd-path')
-        //     .attr('d', function(d) {
-        //         console.log(d)
-        //         return curDataAttrs[d.id].shape
-        //     })
-        //     .style('fill', d => curDataAttrs[d.id].color);
-
-        // elements
-        // .join("path")
-        //     .attr('d', d => curDataAttrs[d.id].shape)
-        //     .style('fill', d => curDataAttrs[d.id].color);
-
-        // let new_paths = elements
-        //     .enter()
-        //     .append('path')
-        // //.join("path")
-
-        // new_paths.merge(elements)
-        //     .attr('d', d => curDataAttrs[d.id].shape)
-        //     .style('fill', d => curDataAttrs[d.id].color);
     }
+
+    d3.selectAll(".unit svg rect")
+    // .style("fill", "black")
+    .attr("fill", "none");
 }
 
 function plotXY(d, tx = 1, tk = 1) {
     let x, y;
     if (attribute != null) {
         let order = curDataAttrs[d.id]['groupBy'].order;
-        if (!isNumericScale) {
+        if (numRowElements > 1) {
             // update the range of x-scale for unit vis to the x value of the column
             bandwidth = xScale.bandwidth();
             unitXScale.range([xScale(String(d.data[attribute])),
@@ -497,8 +336,6 @@ function plotXY(d, tx = 1, tk = 1) {
 }
 
 /* Helper functions */
-
-/* Read SVG */
 function readFile(e) {
     let file = document.querySelector('input[type=file]').files[0];
     let reader = new FileReader();
@@ -517,29 +354,9 @@ function importImgSVG(data) {
     d3.select(svgNode)
         .attr('height', 18)
         .attr('width', 18)
-        .style('fill', 'plum');
+        .style('fill', 'grey');
     imgSVGs.push(svgNode);
     console.log('imgSVG', imgSVGs);
-}
-
-function filterData(attr, lowValue, highValue) {
-    // remove the selcted elements from current data
-    //selection
-    // between a range (including)
-    let dat = dataset.filter(d => d[attr] >= lowValue && d[attr] <= highValue);
-    setData(dat);
-    groupByAttribute(currentData, attribute);
-    updateVisualization();
-}
-
-function updateXAttribute(attr) {
-    attribute = attr;
-    groupByAttribute(currentData, attribute);
-    updateVisualization();
-}
-
-function clearData() {
-    // filter this
 }
 
 /* Allow users to filter by only 1 attribute at a time? */
@@ -560,50 +377,35 @@ function groupByAttribute(data, attribute) {
     }
 
     // Hard-coded for candy dataset --> eg: 0 for no chocolate, 1 for chocolate
-    let xAxesLabels = [];
-    if (!isNumericScale) {
-        if (Object.keys(attrValuesCount).length === 2) {
-            xAxesLabels[0] = `No ${attribute}`;
-            xAxesLabels[1] = `${attribute}`;
-        } else {
-            xAxesLabels = attrValues;
-        }
-    }
-
-    sortedAxisLabels = [];
-    if (!isNumericScale) {
-        let attrVals = Object.keys(attrValuesCount);
-        for (let i = 0; i < attrVals.length; i++) {
-            sortedAxisLabels.push({ attrName: xAxesLabels[i], attrValue: attrVals[i] });
-        }
+    if (Object.keys(attrValuesCount).length === 2) {
+        xAxesLabels[0] = `No ${attribute}`;
+        xAxesLabels[1] = `${attribute}`;
     }
 
     // keep count of element's occurrence in each attribute value and store for grouping
     for (let dataPt of data) {
         attrValuesCount[dataPt.data[attribute]]++;
         curDataAttrs[dataPt.id]['groupBy'] = {
+            'column': attrValues.indexOf(dataPt.data[attribute]),
             'order': attrValuesCount[dataPt.data[attribute]]
         };
     }
-
     return data;
 }
 
 function setData(d) {
     let i = 0;
-    curDataAttrs = {};
-    currentData = [];
     for (let dataPt of d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
-        //dataset.push({ id: i, data: dataPt });
-        currentData.push({ id: i, data: dataPt });
+        dataset.push({ id: i, data: dataPt });
+        // console.log("datapoint", dataPt);
         curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0 };
         i++;
     }
-    return currentData;
+    return dataset;
 }
 
-/* function candyRow(d) {
+function candyRow(d) {
     return {
         candy: d['Candy'],
         chocolate: +d.Chocolate,
@@ -619,7 +421,7 @@ function setData(d) {
         pricePercent: +d['Price Percent'],
         winPercent: +d['Win Percent'],
     };
-}; */
+};
 
 /* 
 * Register events handlers for pointers (touch, pen, mouse, etc) 
@@ -638,11 +440,6 @@ function setHandlers(name) {
     //el.onpointerout = pointerupHandler; // moving to descendent (unit circles) triggers pointerout 
     el.onpointerleave = pointerupHandler;
 
-    // move handlers for different targets
-    /* if (name === 'lasso-selectable-area')
-        el.onpointermove = pinchZoomXY;
-    else if (name === 'x-axis-content')
-        el.onpointermove = pinchZoomX; */
 }
 
 function init() {
@@ -661,6 +458,7 @@ function pointerdownHandler(ev) {
     //updateBackground(ev);
     // check if this is a double tap
     doubleTapHandler(ev);
+    // updateSelection();
 }
 
 function doubleTapHandler(ev) {
@@ -686,15 +484,10 @@ function detectOnePointerDoubleTap() {
     if (onePointerTappedTwice && evCacheContent.length === 1 && !twoPointersTappedTwice) {
         // select all unit vis on single pointer double tap
         selection = d3.selectAll('#chart-content .unit')
-            .classed("selected", true)
+            .classed("selected", false)
             .attr('r', circleRadius); // reset radius of unselected points;
-
-        //selection.classed("selected", true);
-        // selection.notSelectedItems()
-        //     .classed("selected", false)
-        //     .attr('r', circleRadius);
         console.log('1 pointer double tap');
-        console.log(selection);
+        // updateSelection();
 
         // reset value for next double tap
         onePointerTappedTwice = false;
@@ -761,20 +554,9 @@ function zoomed(e) {
         // transform x-axis g tag
         gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
             .attr('stroke-width', '0.05em');
-
-        if (sortedAxisLabels.length > 5) {
-            gXAxis.selectAll('text')
-                .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} rotate(-45)`)
-                .style("text-anchor", "end")
-            if (sortedAxisLabels.length > 30) {
-                gXAxis
-                    .style("font-size", "0.5em");
-            }
-        } else {
-            // transform texts
-            gXAxis.selectAll("text")
-                .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
-        }
+        // transform texts
+        gXAxis.selectAll("text")
+            .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
     }
     // transform circles along x-axis only
     updateUnitViz(t.x, t.k);
@@ -897,6 +679,8 @@ let lasso = d3.lasso()
     .on("draw", lassoDraw)
     .on("end", function () {
         lassoEnd();
+        updateSelection();
+        changeTab();
         //console.log('selectedItems', lasso.selectedItems());
     });
 
@@ -905,6 +689,8 @@ function lassoStart() {
         .attr('r', circleRadius) // reset radius
         .classed("not_possible", true)
         .classed("selected", false);
+
+    // updateSelection();
 };
 
 function lassoDraw() {
@@ -930,7 +716,7 @@ function lassoEnd() {
             .attr('r', circleRadius); // reset radius of unselected points
     }
 
-    selection = lasso.selectedItems();
+    
 
     /* the radius of possible points (which becomes selected now) will remain as 'circleRadius'.
     So, only update the radius of unselected points. */
@@ -939,71 +725,19 @@ function lassoEnd() {
     lasso.notSelectedItems()
         .classed("selected", false)
         .attr('r', circleRadius); // reset radius of unselected points
-
-    // color
-    // selection.data().forEach(d => {
-    //     curDataAttrs[d.id].color = 'pink';
-    // });
-    // updateVisualization();
-
-    // // shape
-    // selection.data().forEach(d => {
-    //     curDataAttrs[d.id].shape = squareShape();
-    // });
-    // updateVisualization();
-
-    // size
-    // selection.data().forEach(d => {
-    //     curDataAttrs[d.id].size = 300;
-    // });
-    // updateVisualization();
-
-    // svg icon
-    // console.log(imgSVGs)
-    useCustomIcons = true;
-    //d3.selectAll('.unit svg').style('fill', 'pink')
-    //d3.select(s).style('fill', curDataAttrs[id].color);
-
-
-    // console.log();
-    // let svg = imgSVGs[curDataAttrs[selection.data()[0].id].imgSvgId];
-    // d3.select(svg)
-    //     .attr('height', 18)
-    //     .attr('width', 18)
-    //     .style('fill', 'plum');
-    // change color
-    /* selection.data().forEach(d => {
-        let id = d.id;
-        curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-        curDataAttrs[d.id].color = 'pink';
-        d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
-    });
-
-    // change size
-    selection.data().forEach(d => {
-        let id = d.id;
-        curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-        curDataAttrs[d.id].color = 'pink';
-        d3.select(`.unit #unit-${id}`)
-        .attr('height', 30)
-        .attr('width', 30);
-    });
-    //iconSize = 3*iconSize;
-    //circleRadius = 2*circleRadius;
-    updateVisualization(); */
-
+    
+    // updateSelection();
+        
 };
 
 function unselectPoints() {
     lasso.notSelectedItems()
         .attr('r', circleRadius); // reset radius of unselected points
+
+    // updateSelection();
 }
 
-
-
-
-/* Niveditha */
-function tabulate(data, cols) {
+function tabulate(data, cols){
     var table = d3.select("#thetablebody").append("table").attr("class", "table table-striped");
     var head = table.append("thead")
     var body = table.append("tbody")
@@ -1014,7 +748,7 @@ function tabulate(data, cols) {
         .data(cols)
         .enter()
         .append("th")
-        .text((d) => (d[0].toUpperCase() + d.slice(1)))
+        .text((d) => (d[0].toUpperCase() + d.slice(1)))  
 
     var tr = body.selectAll("tr")
         .data(data)
@@ -1028,7 +762,7 @@ function tabulate(data, cols) {
         .text((d) => d) //[0].toUpperCase() + d.slice(1));
 }
 
-function createAccordion(data, cols) {
+function createAccordion(data, cols){
     // var acc = d3.select("#pill-overview")
     //             .append("div")
     //             .attr("class", "accordion")
@@ -1040,32 +774,32 @@ function createAccordion(data, cols) {
         .enter()
         .append("div")
         .attr("class", "accordion-item");
-
+        
     accitem.append("h2")
         .attr("class", "accordion-header")
-        .attr("id", (d, i) => "acc-heading-" + i)
+        .attr("id", (d, i) => "acc-heading-"+i)
         .append("button")
         .attr("class", "accordion-button collapsed")
         .attr("type", "button")
         .attr("data-bs-toggle", "collapse")
-        .attr("data-bs-target", (d, i) => "#acc-" + i)
-        .attr("aria-controls", (d, i) => "acc-" + i)
+        .attr("data-bs-target", (d, i) => "#acc-"+i)
+        .attr("aria-controls", (d, i) => "acc-"+i)
         .attr("aria-expanded", "false")
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
 
     accitem.append("div")
         .attr("class", "accordion-collapse collapse")
-        .attr("id", (d, i) => "acc-" + i)
-        .attr("aria-labelledby", (d, i) => "acc-heading-" + i)
+        .attr("id", (d, i) => "acc-"+i)
+        .attr("aria-labelledby", (d, i) => "acc-heading-"+i)
         .attr("data-bs-parent", (d) => "#dim")
         .append("div")
         .attr("class", "accordion-body")
         .append("xhtml:body")
         .html((d) => stats(data, d));
-
+        
 }
 
-function createDropDown(data, cols) {
+function createDropDown(data, cols){
 
     d3.select("#dropdown-menu1")
         .selectAll("li")
@@ -1075,12 +809,12 @@ function createDropDown(data, cols) {
         .append("a")
         .attr("class", "dropdown-item")
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
-        .on('pointerdown', function (e, d) {
-
+        .on('pointerdown', function(e,d){
+            
             let index = columns.indexOf(d);
             console.log("att", d, index);
             changeXAxis(index);
-        });
+        });  
 
     d3.select("#dropdown-menu3")
         .selectAll("li")
@@ -1090,11 +824,11 @@ function createDropDown(data, cols) {
         .append("a")
         .attr("class", "dropdown-item")
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
-        .on('pointerdown', function (e, d) {
+        .on('pointerdown', function(e,d){
             console.log("att", d);
             // changeXAxis(d);
-        });
-
+        });  
+    
     d3.select("#dropdown-menu4")
         .selectAll("li")
         .data(cols)
@@ -1102,15 +836,15 @@ function createDropDown(data, cols) {
         .append("li")
         .append("a")
         // .attr("class", "dropdown-item")
-        .attr("class", (d, i) => { if (col_types[i] != "string") { return "dropdown-item disabled"; } else { return "dropdown-item" } })
-        .attr("tabindex", (d, i) => { if (col_types[i] != "string") { return "-1"; } })
-        .attr("aria-disabled", (d, i) => { if (col_types[i] != "string") { return "true"; } })
+        .attr("class", (d, i)=> {if(col_types[i] != "string") { return "dropdown-item disabled";} else { return "dropdown-item"}})
+        .attr("tabindex", (d, i)=> {if(col_types[i] != "string") { return "-1";}})
+        .attr("aria-disabled", (d, i)=> {if(col_types[i] != "string") { return "true";}})
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
-        .on('pointerdown', function (e, d) {
+        .on('pointerdown', function(e,d){
             console.log("att", d);
             // changeXAxis(d);
-        });
-
+        }); 
+    
     d3.select("#dropdown-menu5")
         .selectAll("li")
         .data(cols)
@@ -1118,168 +852,166 @@ function createDropDown(data, cols) {
         .append("li")
         .append("a")
         // .attr("class", "dropdown-item")
-        .attr("class", (d, i) => { if (col_types[i] == "string") { return "dropdown-item disabled"; } else { return "dropdown-item" } })
-        .attr("tabindex", (d, i) => { if (col_types[i] == "string") { return "-1"; } })
-        .attr("aria-disabled", (d, i) => { if (col_types[i] == "string") { return "true"; } })
+        .attr("class", (d, i)=> {if(col_types[i] == "string") { return "dropdown-item disabled";} else { return "dropdown-item"}})
+        .attr("tabindex", (d, i)=> {if(col_types[i] == "string") { return "-1";}})
+        .attr("aria-disabled", (d, i)=> {if(col_types[i] == "string") { return "true";}})
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
-        .on('pointerdown', function (e, d) {
+        .on('pointerdown', function(e,d){
             console.log("att", d);
             getColforSize(d);
-        });
-
-    d3.select("#dropdown-menu7")
+        });  
+    
+     d3.select("#dropdown-menu7")
         .selectAll("li")
         .data(cols)
         .enter()
         .append("li")
         .append("a")
         // .attr("class", "dropdown-item")
-        .attr("class", (d, i) => { if (col_types[i] == "string") { return "dropdown-item disabled"; } else { return "dropdown-item" } })
-        .attr("tabindex", (d, i) => { if (col_types[i] == "string") { return "-1"; } })
-        .attr("aria-disabled", (d, i) => { if (col_types[i] == "string") { return "true"; } })
+        .attr("class", (d, i)=> {if(col_types[i] == "string") { return "dropdown-item disabled";} else { return "dropdown-item"}})
+        .attr("tabindex", (d, i)=> {if(col_types[i] == "string") { return "-1";}})
+        .attr("aria-disabled", (d, i)=> {if(col_types[i] == "string") { return "true";}})
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
-        .on('pointerdown', function (e, d) {
+        .on('pointerdown', function(e,d){
             console.log("filter", d);
             filterAxis(d);
-        });
+        });  
 
 }
 
-function stats(data, colname) {
+function stats(data, colname){    
 
     // if(typeof(list_items[0]) == "string")
-    if (typeof (data[0]['data'][colname]) != "number") {
-
+    console.log(typeof(data[0]['data'][colname]))
+    if (typeof(data[0]['data'][colname]) != "number"){
+        console.log(data)
         let list_items = data.map((d) => d['data'][colname])
         return "Number of items: " + list_items.length;
 
-    } else {
+    }else{
 
         // console.log("Column: ", colname, data[0]['data'][colname]);
-        let total = 0;
-        let count = 0;
+        let total =0;
+        let count =0;
         let max = data[0]['data'][colname];
         let min = data[0]['data'][colname];
         let quant = "";
 
         let currval;
 
-        for (let i = 0; i < data.length; i++) {
+        for (let i=0; i< data.length; i++){
             currval = data[i]['data'][colname];
             total += currval;
             count++;
 
-            if (currval > max) {
+            if (currval > max){
                 max = currval;
             }
-            if (currval < min) {
+            if(currval < min){
                 min = currval;
             }
         }
         quant += "Total: ";
-        quant += Math.round(total * 100) / 100;
+        quant += Math.round(total*100)/100;
         quant += "<br>Average: ";
-        quant += Math.round(total / count * 100) / 100;
+        quant += Math.round(total/count*100)/100;
         quant += "<br>Min: ";
-        quant += Math.round(min * 100) / 100;
+        quant += Math.round(min*100)/100;
         quant += "<br>Max: ";
-        quant += Math.round(max * 100) / 100;
+        quant += Math.round(max*100)/100;
 
         // console.log(quant);
 
         return quant;
-    }
+    }  
 }
 
-function overview(rows, columns) {
+function overview(rows, columns){
     d3.select("#overview_num").text("The dataset has " + rows + " rows and " + columns + " columns.");
     d3.select("#overview").text("Data attributes");
 }
 
-function getColforSize(colname) {
+function getColforSize(colname){
 
-    //let list_items = dataset.map((d) => d['data'][colname])
-    let list_items = allData.map((d) => d['data'][colname])
+    let list_items = dataset.map((d) => d['data'][colname])
 
-    let max = list_items[0];
+    let max =list_items[0];
     let min = list_items[0];
     list_items.forEach(element => {
-        if (element > max) {
+        if(element>max){
             max = element;
         }
-        if (element < min) {
+        if(element<min){
             min = element;
         }
     });
-    console.log("Range", min, max);
+    console.log("Range", min, max); 
     changeSizeByCol(colname, min, max);
 }
 
-function changeSizeByCol(colname, min, max) {
+function changeSizeByCol(colname, min, max){
     // console.log("data", currentData);
 
     d3.select("#dropdownMenuButton5")
         .text(colname);
 
-    for (let i = 0; i < currentData.length; i++) {
+    for (let i=0; i<currentData.length; i++){
         let name = "#unit-icon-" + i + " svg";
         let currsize = currentData[i]['data'][colname];
-        let reqsize = (((currsize - min) * (40 - 10)) / (max - min)) + 10;
+        let reqsize = (((currsize-min)*(40-10))/(max-min)) + 10;
 
         console.log("curr", reqsize);
         d3.select(name).attr('width', reqsize).attr('height', reqsize);
     }
 }
 
-function changeColor(newColor) {
+function changeColor(newColor){
     console.log("changing color", currentData.length);
-    console.log(selection);
-    if (selection) {
-        selection.data().forEach(d => {
-            curDataAttrs[d.id].color = 'pink';
-        });
-        updateVisualization();
-    } else {
-        d3.selectAll('.unit').style('fill', newColor);
-        d3.selectAll("#shapes svg path").style('fill', newColor);
-    }
-    //d3.selectAll('.unit')
+
+    // let imgSVG = data1[1];
+    // let svgNode = imgSVG.getElementsByTagName("svg")[0];
+
+    for (let i=0; i<currentData.length; i++){
+        let name = "#unit-icon-" + i + " svg";
+        d3.select(name).style('fill', newColor);
+    }    
+
+    d3.selectAll("#shapes svg path").style('fill', newColor);
 }
 
-function changeSize(newSize) {
+function changeSize(newSize){
     console.log("changing color", newSize);
 
     // let reqsize = (newSize/4) + 15;
-    for (let i = 0; i < currentData.length; i++) {
+    for (let i=0; i<currentData.length; i++){
         let name = "#unit-icon-" + i + " svg";
         d3.select(name).attr('width', newSize).attr('height', newSize);
     }
 
 }
 
-function changeXAxis(index) {
+function changeXAxis(index){
 
     // console.log("changin axis", attribute);
     d3.select("#dropdownMenuButton1")
         .text(columns[index]);
     d3.select('#x-axis-label')
         .text(columns[index]);
-
+    
 
     d3.selectAll(".unit").remove();
     d3.select('.unit svg').remove();
     visualize(index);
 }
 
-function visualize(colindex) {
+function visualize(colindex){
     attribute = columns[colindex];
-    //currentData = groupByAttribute(dataset, attribute);
     currentData = groupByAttribute(dataset, attribute);
     createVisualization();
     updateVisualization();
 }
 
-function findShape(shape) {
+function findShape(shape){
     console.log(shape, shape.slice(6));
 
     d3.selectAll(".unit svg path").remove();
@@ -1288,16 +1020,16 @@ function findShape(shape) {
         .attr("width", currSize).attr("height", currSize)
         .append("path").attr("d", all_shapes[shape.slice(6)])
         .attr("transform", "scale(8) translate(10, 10)")
-    // .attr("transform", "translate(25, 25)")
+        // .attr("transform", "translate(25, 25)")
 }
 
-function sortAxis(colName) {
+function sortAxis(colName){
 
     d3.select("#dropdownMenuButton6")
         .text(colName);
 }
 
-function filterAxis(colName) {
+function filterAxis(colName){
 
     d3.select("#double-slider").remove();
 
@@ -1307,8 +1039,8 @@ function filterAxis(colName) {
         .append("p")
         .attr("id", "range-text")
         .text("Choose range:");
-    // .style("display", "block");
-
+        // .style("display", "block");
+    
     d3.select("#double-slider")
         .append("input")
         .attr("type", "text")
@@ -1319,21 +1051,22 @@ function filterAxis(colName) {
     d3.select("#dropdownMenuButton7")
         .text(colName);
 
-    let list_items = allData.map((d) => d['data'][colName])
+    let list_items = dataset.map((d) => d['data'][colName])
 
-    let max = list_items[0];
+    let max =list_items[0];
     let min = list_items[0];
     list_items.forEach(element => {
-        if (element > max) {
+        if(element>max){
             max = element;
         }
-        if (element < min) {
+        if(element<min){
             min = element;
         }
     });
+    console.log("Range", min, max); 
 
-    min = (Math.round(min * 100)) / 100;
-    max = (Math.round(max * 100)) / 100;
+    min = (Math.round(min*100))/100;
+    max = (Math.round(max*100))/100;
 
     $("#double-range-slider").ionRangeSlider({
         type: "double",
@@ -1341,86 +1074,86 @@ function filterAxis(colName) {
         max: max,
         from: min,
         to: max,
-        step: Math.round((max - min) * 10) / 100,
+        step: Math.round((max-min)*10)/100,
         // grid: true
     });
 }
 
-function updateSelection() {
+function updateSelection(){
     // console.log("Selected!");
 
     let data = d3.selectAll(".selected").data();
     // console.log("selection data", data);
 
-    if (data.length != 0) {
+    if(data.length !=0){
 
         let candynames = "<i>";
-        for (let i = 0; i < data.length; i++) {
-            // candynames += "<i>";
-            candynames += data[i]['data']['Candy'];
-            candynames += "<br>";
-        }
+    for (let i=0; i< data.length; i++){
+        // candynames += "<i>";
+        candynames += data[i]['data']['Candy'];
+        candynames += "<br>";
+    }
 
-        // console.log(candynames);
-        // console.log("column ", attribute);
+    // console.log(candynames);
+    // console.log("column ", attribute);
 
-        let quant = "<i>";
-        if (typeof (data[0]['data'][attribute]) == "number") {
-            // console.log("numeric");
-            let total = 0;
-            let count = 0;
-            let max = data[0]['data'][attribute];
-            let min = data[0]['data'][attribute];
-            let currval;
+    let quant = "<i>";
+    if (typeof(data[0]['data'][attribute]) == "number"){
+        // console.log("numeric");
+        let total = 0;
+        let count = 0;
+        let max = data[0]['data'][attribute];
+        let min = data[0]['data'][attribute];
+        let currval;
 
-            for (let i = 0; i < data.length; i++) {
-                currval = data[i]['data'][attribute];
-                total += currval;
-                count++;
+        for (let i=0; i< data.length; i++){
+            currval = data[i]['data'][attribute];
+            total += currval;
+            count++;
 
-                if (currval > max) {
-                    max = currval;
-                }
-                if (currval < min) {
-                    min = currval;
-                }
+            if (currval > max){
+                max = currval;
             }
-            quant += "Total: ";
-            quant += Math.round(total * 100) / 100;
-            quant += "<br>Average: ";
-            quant += Math.round(total / count * 100) / 100;
-            quant += "<br>Min: ";
-            quant += Math.round(min * 100) / 100;
-            quant += "<br>Max: ";
-            quant += Math.round(max * 100) / 100;
+            if(currval < min){
+                min = currval;
+            }
         }
+        quant += "Total: ";
+        quant += Math.round(total*100)/100;
+        quant += "<br>Average: ";
+        quant += Math.round(total/count*100)/100;
+        quant += "<br>Min: ";
+        quant += Math.round(min*100)/100;
+        quant += "<br>Max: ";
+        quant += Math.round(max*100)/100;
+    }
 
-        // console.log("quant", quant);
+    // console.log("quant", quant);
 
-        d3.select("#selection-text")
-            .html("<br>" + data.length + " data points are selected.<br><hr><br>The selected candies are: <br>" + candynames + "</i><br><hr><br>The aggregate stats of selected points based on \"" + attribute + "\" is: " + quant + "</i>");
+    d3.select("#selection-text")
+        .html("<br>" + data.length + " data points are selected.<br><hr><br>The selected candies are: <br>"+ candynames + "</i><br><hr><br>The aggregate stats of selected points based on \"" + attribute + "\" is: " + quant + "</i>");
 
-    } else {
+    } else{
 
         d3.select("#selection")
-            .selectAll("body")
-            .remove();
+        .selectAll("body")
+        .remove();
 
         d3.select("#selection")
-            .append("xhtml:body")
-            .attr("id", "selection-text")
-            .html("<br>No points are selected.<br>")
+        .append("xhtml:body")
+        .attr("id", "selection-text")
+        .html("<br>No points are selected.<br>")
 
     }
 
 }
 
-function changeTab() {
+function changeTab(){
     d3.selectAll("#pill-overview-tab")
         .classed("active", false)
         .attr("aria-selected", false)
         .attr("tabindex", "-1")
-
+    
     d3.selectAll("#pill-chart-tab")
         .classed("active", false)
         .attr("aria-selected", false)
@@ -1433,7 +1166,7 @@ function changeTab() {
     d3.selectAll("#pill-chart")
         .classed("active", false)
         .classed("show", false)
-
+    
     d3.select("#pill-details-tab")
         .classed("active", true)
         .attr("aria-selected", true)

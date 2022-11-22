@@ -5,6 +5,3 @@ let crossShape = d3.symbol().type(d3.symbolCross).size(120);
 let diamondShape = d3.symbol().type(d3.symbolDiamond).size(70);
 let starShape = d3.symbol().type(d3.symbolStar).size(120);
 let wyeShape = d3.symbol().type(d3.symbolWye).size(120);
-
-
-
