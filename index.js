@@ -35,6 +35,7 @@ let curDataAttrs = {};
 // settings
 let duration = 1;
 let circleRadius = 7;
+let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 
@@ -51,7 +52,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = true;
+let useCustomIcons = false;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
@@ -214,7 +215,7 @@ function updateVisualization() {
     let unitVisPadding = 1.5; //pixels
     setNumericScale();
 
-    let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
+    //let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -237,7 +238,7 @@ function updateVisualization() {
         // get max size in dataset
 
 
-        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * unitSize) + unitVisPadding));
+        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
     }
 
     /* let the number of elements per row in each column be at least 1 */
@@ -256,8 +257,8 @@ function updateVisualization() {
         unitYScale.domain([1, Math.ceil(maxAttributeValueCount)]).range([height - unitVisHtMargin, 0]); // number of rows 
     } */
 
-    //let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
-    let yScaleHeight = 2 * unitSize * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    //let yScaleHeight = 2 * unitSize * (maxAttributeValueCount / numRowElements) * unitVisPadding;
     unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)])
         .range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
 
@@ -487,7 +488,7 @@ function updateUnitViz(tx = 1, tk = 1) {
     }
 
     d3.selectAll(".unit svg rect")
-    .attr("fill", "none");
+        .attr("fill", "none");
 }
 
 function plotXY(d, tx = 1, tk = 1) {
@@ -609,7 +610,11 @@ function setData(d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
         //dataset.push({ id: i, data: dataPt });
         currentData.push({ id: i, data: dataPt });
-        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), size: circleRadius, imgSvgId: 0 };
+        // console.log(d3.select(circleShape));
+        // console.log(d3.select(circleShape).data());
+        // console.log(circleShape.size(220));
+        // console.log(circleShape.size(31));
+        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0 };
         i++;
     }
     return currentData;
@@ -1006,8 +1011,10 @@ function lassoEnd() {
 
 };
 
-function unselectPoints() {
-    lasso.notSelectedItems()
+function deselectPoints() {
+    lasso.selectedItems()
+        .classed("selected", false);
+    //lasso.notSelectedItems()
     //.attr('r', circleRadius); // reset radius of unselected points
 }
 
@@ -1244,7 +1251,7 @@ function changeSizeByCol(colname, min, max) {
 }
 
 function changeColor(newColor) {
-    if (selection) {
+    if (selection.length !== 0) {
         if (useCustomIcons) {
             selection.data().forEach(d => {
                 let id = d.id;
@@ -1258,15 +1265,24 @@ function changeColor(newColor) {
         d3.selectAll('.unit').style('fill', newColor);
     }
     d3.selectAll("#shapes svg path").style('fill', newColor);
+    deselectPoints();
 }
 
 function changeSize(newSize) {
-    console.log("changing size", newSize);
-    if (selection) {
+    if (selection.length !== 0) {
         if (useCustomIcons) {
-
+            selection.data().forEach(d => {
+                //curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+                let name = "#unit-icon-" + d.id + " svg";
+                d3.select(name).attr('height', 30).attr('width', 30);
+            });
         } else {
-            d3.selectAll(selection).style('size', newSize);
+            selection.data().forEach(d => {
+                //curDataAttrs[d.id].size = newSize;
+            });
+            updateVisualization();
+
+            //d3.selectAll(selection).style('size', newSize);
             // selection.data().forEach(d => {
             //     console.log(curDataAttrs[d.id])
             //     curDataAttrs[d.id].size = newSize;
@@ -1274,19 +1290,21 @@ function changeSize(newSize) {
             //updateVisualization();
         }
     } else {
-        // let reqsize = (newSize/4) + 15;
-        for (let i = 0; i < currentData.length; i++) {
-            let name = "#unit-icon-" + i + " svg";
-            console.log(d3.select(name))
-            d3.select(name).attr('width', newSize).attr('height', newSize);
+        if (useCustomIcons) {
+            for (let i = 0; i < currentData.length; i++) {
+                let name = "#unit-icon-" + i + " svg";
+                d3.select(name).attr('width', newSize).attr('height', newSize);
+            }
+            
+        }
+        else {
+            for (let i = 0; i < currentData.length; i++) {
+                let name = "#unit-icon-" + i + " svg";
+                d3.select(name).attr('width', newSize).attr('height', newSize);
+            }
         }
     }
-    for (let i = 0; i < currentData.length; i++) {
-        let name = "#unit-icon-" + i + " svg";
-        console.log(d3.select(name))
-        d3.select(name).attr('width', newSize).attr('height', newSize);
-    }
-    //d3.select(name).attr('width', newSize).attr('height', newSize);
+    deselectPoints();
 }
 
 function changeXAxis(index) {
