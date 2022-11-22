@@ -20,14 +20,14 @@ let columns = [];
 let isNumericScale = false;
 
 // Holds the current data displayed in the chart
-let currentData;
+let currentData = [];
 let curDataAttrs = {};
 
 // settings
 let duration = 1;
 let circleRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
-let xAxesLabels = []; // labels of grouped attribute
+let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 
 // selections
 let selection = []; // all selected unit vis
@@ -46,6 +46,7 @@ let useCustomIcons = true;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
+let attrSortOder = 0; // 0: ascending, 1: descending
 
 let array = [d3.csv('dataset/candy-data.csv'), d3.xml('images/candy.svg')]
 Promise.all(array).then(function (data1) {
@@ -67,27 +68,36 @@ Promise.all(array).then(function (data1) {
         }
     });
 
-    dataset = setData(data[0]);
+    dataset = data[0];
+    setData(data[0]);
     columns = data[0].columns;
     // CHANGE LATER?: initially, use chocolate as an attribute to group on
     //attribute = 'fruity';
     //attribute = columns[11];
     attribute = columns[1];
+    //attribute = columns[0];
     //attribute = 'sugarPercent';
     //attribute = 'winPercent';
     //attribute = 'pricePercent';
-    currentData = groupByAttribute(dataset, attribute);
-    
+    setNumericScale();
+    groupByAttribute(currentData, attribute);
+
 
     // Niv
-    cols = Object.keys(dataset[0].data)
+    /* cols = Object.keys(dataset[0].data);
     overview(dataset.length, cols.length);
     tabulate(dataset, cols);
     createAccordion(dataset, cols);
-    createDropDown(dataset, cols);
+    createDropDown(dataset, cols); */
 
     createVisualization();
     updateVisualization();
+
+    /* filterData(columns[11], 0, 0.5);
+    filterData(columns[11], 0, 0.2); */
+
+    /* updateXAttribute(columns[2]); */
+    updateXAttribute(columns[11]);
 });
 
 function createVisualization() {
@@ -100,7 +110,7 @@ function createVisualization() {
 
     //d3.select("#chart").attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
     d3.select("svg#chart")
-    .attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+        .attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
 
     // create a rectangle region that allows for lasso selection  
     d3.select("#lasso-selectable-area rect")
@@ -132,7 +142,7 @@ function updateVisualization() {
         console.log(err);
     } */
     let unitVisPadding = 1.5; //pixels
-    setNumericScale()
+    setNumericScale();
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -142,7 +152,14 @@ function updateVisualization() {
         xScale.domain(minMax).range([0, width]); // takes number as input
     } else { // categorical scale (yes/no)
         xScale = d3.scaleBand();
-        xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
+
+        // determine order of columns
+        if (attrSortOder === 0)
+            sortedAxisLabels.sort((a, b) => a.attrName.localeCompare(b.attrName));
+        else sortedAxisLabels.sort((a, b) => b.attrName.localeCompare(a.attrName));
+
+        //xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
+        xScale.domain(sortedAxisLabels.map(d => d.attrValue)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
 
         // set number of elements in each column
         numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
@@ -176,66 +193,32 @@ function updateVisualization() {
         .attr('clip-path', 'url(#clipx)');
 
     d3.select('.x-axis')
-        .call(xAxis);
+        .call(xAxis)
+        .style("font-size", "1em");
 
+    if (sortedAxisLabels.length > 5) {
+        d3.select('.x-axis')
+            .selectAll('text')
+            .attr("transform", "rotate(-45)")
+            .style("text-anchor", "end")
+        if (sortedAxisLabels.length > 30) {
+            d3.select('.x-axis')
+                .style("font-size", "0.5em");
+        }
+    }
+
+    let attrs = sortedAxisLabels.map(function (d, i) {
+        return d.attrName;
+    });
 
     if (!isNumericScale)
         d3.select('.x-axis')
             .selectAll("text")
-            .text((d, i) => xAxesLabels[i]);
+            //.text((d, i) => xAxesLabels[i]);
+            .text((d, i) => attrs[i]);
 
     // Update data in the visualization
     updateUnitViz();
-    //updateUnitVizIcons();
-
-    // update elements
-    /* elements.transition().duration(duration)
-        .attr("cx", function (d) {
-            if (attribute != null) {
-                if (numRowElements > 1) {
-                    // update the range of x-scale for unit vis to the x value of the column
-                    let bandwidth = xScale.bandwidth();
-                    unitXScale.range([xScale(String(d.data[attribute])),
-                    xScale(String(d.data[attribute])) + bandwidth]);
-                    return unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
-                } else return xScale(d.data[attribute]); // numeric scale
-            }
-        })
-        .attr("cy", function (d) {
-            if (attribute != null) {
-                return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
-            }
-        }); */
-
-    // add new elements
-    /* elements.enter()
-        .append("circle")
-        .attr("class", "unit")
-        .attr("cx", function (d) {
-            if (attribute != null) {
-                if (numRowElements > 1) {
-                    // update the range of x-scale for unit vis to the x value of the column
-                    bandwidth = xScale.bandwidth();
-                    unitXScale.range([xScale(String(d.data[attribute])),
-                    xScale(String(d.data[attribute])) + bandwidth]);
-                    return unitXScale((d.attrs.groupBy.order - 1) % numRowElements);
-                } else return xScale(d.data[attribute]); // numeric scale
-            }
-        })
-        .attr("cy", function (d) {
-            if (attribute != null) {
-                //return unitYScale(d.attrs.groupBy.order);
-                return unitYScale(Math.floor((d.attrs.groupBy.order - 1) / numRowElements));
-            }
-        })
-        .attr('r', circleRadius)
-        .style('fill', d => d.attrs.color); 
-
-    // remove elements
-    elements.exit()
-        .transition().duration(duration)
-        .attr("r", 0)
-        .remove(); */
 
     // Update x-axis label
     d3.select('#x-axis-label')
@@ -243,25 +226,13 @@ function updateVisualization() {
         .attr("x", width / 2)
         .attr("y", margin.top + margin.bottom - 40)
         .attr("text-anchor", "middle")
-        .attr("font-size", "0.9em")
+        .attr("font-size", "1.2em")
     //.style("fill", 'dimgrey');
 
     // Enable Lasso selection for unit visualization -- for the svg and the units within it
     lasso.targetArea(d3.select('#lasso-selectable-area'))
         .items(d3.selectAll('#chart-content .unit'));
     d3.select("#chart").call(lasso).call(chartZoom);
-}
-
-function getImgSVG() {
-    return new Promise((resolve, reject) => function () {
-        d3.xml("/images/candy.svg").then(data => {
-            console.log(data)
-            imgSVG = data;
-            resolve(imgSVG);
-            //d3.select("#svg-container").node().append(data.documentElement)
-        });
-    })
-
 }
 
 function updateImgSVG() {
@@ -327,7 +298,7 @@ function plotXY(d, tx = 1, tk = 1) {
     let x, y;
     if (attribute != null) {
         let order = curDataAttrs[d.id]['groupBy'].order;
-        if (numRowElements > 1) {
+        if (!isNumericScale) {
             // update the range of x-scale for unit vis to the x value of the column
             bandwidth = xScale.bandwidth();
             unitXScale.range([xScale(String(d.data[attribute])),
@@ -342,6 +313,8 @@ function plotXY(d, tx = 1, tk = 1) {
 }
 
 /* Helper functions */
+
+/* Read SVG */
 function readFile(e) {
     let file = document.querySelector('input[type=file]').files[0];
     let reader = new FileReader();
@@ -365,6 +338,59 @@ function importImgSVG(data) {
     console.log('imgSVG', imgSVGs);
 }
 
+function filterData(attr, lowValue, highValue) {
+    // remove the selcted elements from current data
+    //selection
+    // between a range (including)
+
+    let filteredData = [];
+    let filteredCurDataAttrs = {};
+    /* for (let d of currentData) {
+        if (d.data[attr] >= lowValue && d.data[attr] <= highValue) {
+            filteredData.push(d);
+            filteredCurDataAttrs[d.id] = curDataAttrs[d.id];
+
+        }
+    } */
+    let dat = dataset.filter(d => d[attr] >= lowValue && d[attr] <= highValue);
+    console.log(dat);
+    setData(dat);
+    console.log('currentData', currentData);
+    // update global variables
+    /* curDataAttrs = { ...filteredCurDataAttrs };
+    currentData = filteredData;
+
+    /* let no_choco = filteredData.filter(function (d) {
+        return d.data['Chocolate'] == 0;
+    })
+    let choco = filteredData.filter(function (d) {
+        return d.data['Chocolate'] == 1;
+    }) */
+    /* console.log('attr', attr);
+    console.log('no_choco', no_choco);
+    console.log('choco', choco); 
+    console.log(filteredData)
+    console.log(curDataAttrs)
+    console.log(Object.keys(curDataAttrs).length)
+    console.log(filteredCurDataAttrs) */
+
+
+    // currentData is updated
+    //currentData = setData(currentData);
+    groupByAttribute(currentData, attribute);
+    updateVisualization();
+}
+
+function updateXAttribute(attr) {
+    attribute = attr;
+    groupByAttribute(currentData, attribute);
+    updateVisualization();
+}
+
+function clearData() {
+    // filter this
+}
+
 /* Allow users to filter by only 1 attribute at a time? */
 function groupByAttribute(data, attribute) {
     // find unique attribute values
@@ -383,34 +409,50 @@ function groupByAttribute(data, attribute) {
     }
 
     // Hard-coded for candy dataset --> eg: 0 for no chocolate, 1 for chocolate
-    if (Object.keys(attrValuesCount).length === 2) {
-        xAxesLabels[0] = `No ${attribute}`;
-        xAxesLabels[1] = `${attribute}`;
+    let xAxesLabels = [];
+    if (!isNumericScale) {
+        if (Object.keys(attrValuesCount).length === 2) {
+            xAxesLabels[0] = `No ${attribute}`;
+            xAxesLabels[1] = `${attribute}`;
+        } else {
+            xAxesLabels = attrValues;
+        }
+    }
+
+    sortedAxisLabels = [];
+    if (!isNumericScale) {
+        let attrVals = Object.keys(attrValuesCount);
+        for (let i = 0; i < attrVals.length; i++) {
+            sortedAxisLabels.push({ attrName: xAxesLabels[i], attrValue: attrVals[i] });
+        }
     }
 
     // keep count of element's occurrence in each attribute value and store for grouping
     for (let dataPt of data) {
         attrValuesCount[dataPt.data[attribute]]++;
         curDataAttrs[dataPt.id]['groupBy'] = {
-            'column': attrValues.indexOf(dataPt.data[attribute]),
             'order': attrValuesCount[dataPt.data[attribute]]
         };
     }
+
     return data;
 }
 
 function setData(d) {
     let i = 0;
+    curDataAttrs = {};
+    currentData = [];
     for (let dataPt of d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
-        dataset.push({ id: i, data: dataPt });
+        //dataset.push({ id: i, data: dataPt });
+        currentData.push({ id: i, data: dataPt });
         curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0 };
         i++;
     }
-    return dataset;
+    //return dataset;
 }
 
-function candyRow(d) {
+/* function candyRow(d) {
     return {
         candy: d['Candy'],
         chocolate: +d.Chocolate,
@@ -426,7 +468,7 @@ function candyRow(d) {
         pricePercent: +d['Price Percent'],
         winPercent: +d['Win Percent'],
     };
-};
+}; */
 
 /* 
 * Register events handlers for pointers (touch, pen, mouse, etc) 
@@ -562,9 +604,20 @@ function zoomed(e) {
         // transform x-axis g tag
         gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
             .attr('stroke-width', '0.05em');
-        // transform texts
-        gXAxis.selectAll("text")
-            .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
+
+        if (sortedAxisLabels.length > 5) {
+            gXAxis.selectAll('text')
+                .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} rotate(-45)`)
+                .style("text-anchor", "end")
+            if (sortedAxisLabels.length > 30) {
+                gXAxis
+                    .style("font-size", "0.5em");
+            }
+        } else {
+            // transform texts
+            gXAxis.selectAll("text")
+                .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
+        }
     }
     // transform circles along x-axis only
     updateUnitViz(t.x, t.k);
@@ -817,6 +870,9 @@ function createDropDown(data, cols) {
             .append("a")
             .attr("class", "dropdown-item")
             .text((d) => (d[0].toUpperCase() + d.slice(1)))
+            .on('pointerdown', function (e, d) {
+                console.log('attribute', d);
+            })
 
     }
 }
