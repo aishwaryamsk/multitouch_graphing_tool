@@ -214,7 +214,7 @@ function updateVisualization() {
     let unitVisPadding = 1.5; //pixels
     setNumericScale();
 
-    let unitSize = d3.max(Object.values(curDataAttrs), d=>d.size);
+    let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -235,8 +235,8 @@ function updateVisualization() {
 
         // set number of elements in each column
         // get max size in dataset
-        
-        
+
+
         numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * unitSize) + unitVisPadding));
     }
 
@@ -323,18 +323,21 @@ function updateUnitViz(tx = 1, tk = 1) {
     //.data(currentData);
 
     if (useCustomIcons) {
-        // let svgs = units.join("g") //image
-        //     .attr("class", "unit")
-        //     //.attr("id", (d, i) => `unit-icon-${i}`)
-        //     //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
-        //     // .attr("d", function (d) {
-        //     //     let node = document.importNode('/images/candy.svg', true);
-        //     //})
-        //     .attr('transform', d => plotXY(d, tx, tk))
+        let svgs = units.join("g") //image
+            .attr("class", "unit")
+            .attr("data-toggle", "tooltip")
+            .attr("data-placement", "top")
+            .attr("title", (d, i) => d['data']['Candy'])
+            .attr("id", (d, i) => `unit-icon-${i}`)
+            //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
+            // .attr("d", function (d) {
+            //     let node = document.importNode('/images/candy.svg', true);
+            //})
+            .attr('transform', d => plotXY(d, tx, tk))
 
 
 
-        let svgs = units.enter()
+        /* let svgs = units.enter()
             .append("g") //image
             .attr("class", "unit")
             .attr("id", (d, i) => `unit-icon-${i}`)
@@ -343,7 +346,7 @@ function updateUnitViz(tx = 1, tk = 1) {
         svgs.merge(units)
             .attr('transform', d => plotXY(d, tx, tk))
 
-        units.exit().remove();
+        units.exit().remove(); */
 
 
         if (d3.select('.unit svg').empty()) {
@@ -482,6 +485,9 @@ function updateUnitViz(tx = 1, tk = 1) {
         //     .attr('d', d => curDataAttrs[d.id].shape)
         //     .style('fill', d => curDataAttrs[d.id].color);
     }
+
+    d3.selectAll(".unit svg rect")
+    .attr("fill", "none");
 }
 
 function plotXY(d, tx = 1, tk = 1) {
@@ -917,11 +923,11 @@ function lassoDraw() {
     lasso.possibleItems()
         .classed("not_possible", false)
         .classed("possible", true)
-        //.attr('r', circleRadius);
+    //.attr('r', circleRadius);
     lasso.notPossibleItems()
         .classed("not_possible", true)
         .classed("possible", false)
-        //.attr('r', circleRadius / 2); // decrease radius of not possible points
+    //.attr('r', circleRadius / 2); // decrease radius of not possible points
 };
 
 function lassoEnd() {
@@ -933,7 +939,7 @@ function lassoEnd() {
     if (lasso.selectedItems().size() === 0) {
         lasso.notSelectedItems()
             .classed("selected", false)
-            //.attr('r', circleRadius); // reset radius of unselected points
+        //.attr('r', circleRadius); // reset radius of unselected points
     }
 
     selection = lasso.selectedItems();
@@ -944,7 +950,7 @@ function lassoEnd() {
         .classed("selected", true);
     lasso.notSelectedItems()
         .classed("selected", false)
-        //.attr('r', circleRadius); // reset radius of unselected points
+    //.attr('r', circleRadius); // reset radius of unselected points
 
     // color
     // selection.data().forEach(d => {
@@ -1002,7 +1008,7 @@ function lassoEnd() {
 
 function unselectPoints() {
     lasso.notSelectedItems()
-        //.attr('r', circleRadius); // reset radius of unselected points
+    //.attr('r', circleRadius); // reset radius of unselected points
 }
 
 
