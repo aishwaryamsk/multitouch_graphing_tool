@@ -213,6 +213,8 @@ function updateVisualization() {
     } */
     let unitVisPadding = 1.5; //pixels
     setNumericScale();
+
+    let unitSize = d3.max(Object.values(curDataAttrs), d=>d.size);
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -232,7 +234,10 @@ function updateVisualization() {
         xScale.domain(sortedAxisLabels.map(d => d.attrValue)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
 
         // set number of elements in each column
-        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
+        // get max size in dataset
+        
+        
+        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * unitSize) + unitVisPadding));
     }
 
     /* let the number of elements per row in each column be at least 1 */
@@ -251,7 +256,8 @@ function updateVisualization() {
         unitYScale.domain([1, Math.ceil(maxAttributeValueCount)]).range([height - unitVisHtMargin, 0]); // number of rows 
     } */
 
-    let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    //let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    let yScaleHeight = 2 * unitSize * (maxAttributeValueCount / numRowElements) * unitVisPadding;
     unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)])
         .range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
 
@@ -597,7 +603,7 @@ function setData(d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
         //dataset.push({ id: i, data: dataPt });
         currentData.push({ id: i, data: dataPt });
-        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0 };
+        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), size: circleRadius, imgSvgId: 0 };
         i++;
     }
     return currentData;
@@ -902,7 +908,7 @@ let lasso = d3.lasso()
 
 function lassoStart() {
     lasso.items()
-        .attr('r', circleRadius) // reset radius
+        //.attr('r', circleRadius) // reset radius
         .classed("not_possible", true)
         .classed("selected", false);
 };
@@ -911,11 +917,11 @@ function lassoDraw() {
     lasso.possibleItems()
         .classed("not_possible", false)
         .classed("possible", true)
-        .attr('r', circleRadius);
+        //.attr('r', circleRadius);
     lasso.notPossibleItems()
         .classed("not_possible", true)
         .classed("possible", false)
-        .attr('r', circleRadius / 2); // decrease radius of not possible points
+        //.attr('r', circleRadius / 2); // decrease radius of not possible points
 };
 
 function lassoEnd() {
@@ -927,7 +933,7 @@ function lassoEnd() {
     if (lasso.selectedItems().size() === 0) {
         lasso.notSelectedItems()
             .classed("selected", false)
-            .attr('r', circleRadius); // reset radius of unselected points
+            //.attr('r', circleRadius); // reset radius of unselected points
     }
 
     selection = lasso.selectedItems();
@@ -938,7 +944,7 @@ function lassoEnd() {
         .classed("selected", true);
     lasso.notSelectedItems()
         .classed("selected", false)
-        .attr('r', circleRadius); // reset radius of unselected points
+        //.attr('r', circleRadius); // reset radius of unselected points
 
     // color
     // selection.data().forEach(d => {
@@ -996,7 +1002,7 @@ function lassoEnd() {
 
 function unselectPoints() {
     lasso.notSelectedItems()
-        .attr('r', circleRadius); // reset radius of unselected points
+        //.attr('r', circleRadius); // reset radius of unselected points
 }
 
 
@@ -1241,7 +1247,7 @@ function changeColor(newColor) {
                 d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
             });
         } else d3.selectAll(selection).style('fill', newColor);
-        
+
     } else {
         d3.selectAll('.unit').style('fill', newColor);
     }
@@ -1249,14 +1255,32 @@ function changeColor(newColor) {
 }
 
 function changeSize(newSize) {
-    console.log("changing color", newSize);
+    console.log("changing size", newSize);
+    if (selection) {
+        if (useCustomIcons) {
 
-    // let reqsize = (newSize/4) + 15;
+        } else {
+            d3.selectAll(selection).style('size', newSize);
+            // selection.data().forEach(d => {
+            //     console.log(curDataAttrs[d.id])
+            //     curDataAttrs[d.id].size = newSize;
+            // });
+            //updateVisualization();
+        }
+    } else {
+        // let reqsize = (newSize/4) + 15;
+        for (let i = 0; i < currentData.length; i++) {
+            let name = "#unit-icon-" + i + " svg";
+            console.log(d3.select(name))
+            d3.select(name).attr('width', newSize).attr('height', newSize);
+        }
+    }
     for (let i = 0; i < currentData.length; i++) {
         let name = "#unit-icon-" + i + " svg";
+        console.log(d3.select(name))
         d3.select(name).attr('width', newSize).attr('height', newSize);
     }
-
+    //d3.select(name).attr('width', newSize).attr('height', newSize);
 }
 
 function changeXAxis(index) {
