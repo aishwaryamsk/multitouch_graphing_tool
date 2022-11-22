@@ -42,7 +42,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = true;
+let useCustomIcons = false;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
@@ -93,11 +93,11 @@ Promise.all(array).then(function (data1) {
     createVisualization();
     updateVisualization();
 
-    /* filterData(columns[11], 0, 0.5);
-    filterData(columns[11], 0, 0.2); */
+    filterData(columns[11], 0, 0.5);
+    filterData(columns[11], 0, 0.2);
 
-    /* updateXAttribute(columns[2]); */
-    updateXAttribute(columns[11]);
+    //updateXAttribute(columns[2]);
+    //updateXAttribute(columns[11]);
 });
 
 function createVisualization() {
@@ -244,26 +244,53 @@ function updateUnitViz(tx = 1, tk = 1) {
     let units = d3.selectAll("#chart-content .unit-vis")
         .selectAll('.unit')
         .data(currentData, d => d.id);
+    //.data(currentData);
 
     if (useCustomIcons) {
-        let svgs = units.join("g") //image
+        // let svgs = units.join("g") //image
+        //     .attr("class", "unit")
+        //     //.attr("id", (d, i) => `unit-icon-${i}`)
+        //     //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
+        //     // .attr("d", function (d) {
+        //     //     let node = document.importNode('/images/candy.svg', true);
+        //     //})
+        //     .attr('transform', d => plotXY(d, tx, tk))
+
+
+
+        let svgs = units.enter()
+            .append("g") //image
             .attr("class", "unit")
             .attr("id", (d, i) => `unit-icon-${i}`)
-            //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
-            // .attr("d", function (d) {
-            //     let node = document.importNode('/images/candy.svg', true);
-            //})
             .attr('transform', d => plotXY(d, tx, tk))
+
+        svgs.merge(units)
+            .attr('transform', d => plotXY(d, tx, tk))
+
+        units.exit().remove();
+
 
         if (d3.select('.unit svg').empty()) {
             // create
             svgs.each(function (d) {
                 // clones whole subtree -- has to be cloned for each instance of the candy
-                let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
-                /* d3.select(s).style('fill', curDataAttrs[d.id].color); */
-                //this.append(imgSVGs[curDataAttrs[d.id].imgSvgId].cloneNode(true));
-                this.append(s.cloneNode(true));
+                let s = imgSVGs[curDataAttrs[d.id].imgSvgId]
+                let id = d.id;
+                d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
+                this.append(s.cloneNode(true))
+                //.attr('id', id);
+                
             });
+        } else if (!d3.select('.unit svg').empty()) {
+            //console.log(d3.selectAll('.unit svg'))
+            // d3.selectAll('.unit svg').each(function(d){
+            //     console.log(d);
+            // })
+            // .style('fill', function(d) { 
+            //     console.log(d)
+            //     //return curDataAttrs[d.id].color
+            // });
+            // d3.selectAll(`.unit ${id}`).style('fill', d => curDataAttrs[d.id].color);
         }
         /* svgs.selectAll('.path-icon') //paths worked
            .data(paths.nodes())
@@ -291,6 +318,93 @@ function updateUnitViz(tx = 1, tk = 1) {
             .attr('d', d => curDataAttrs[d.id].shape)
             .style('fill', d => curDataAttrs[d.id].color)
             .attr('transform', d => plotXY(d, tx, tk));
+
+        // units.join("g")
+        //     .attr("class", "unit")
+
+        // //units.join('path')
+        // .append('path')
+        //     .attr("class", "shape-path")
+        //     .attr('d', d => curDataAttrs[d.id].shape)
+        //     .style('fill', d => curDataAttrs[d.id].color)
+        //     .attr('transform', d => plotXY(d, tx, tk));
+
+        // //exit.remove();
+        // // add new g's and paths to g's
+        // console.log(currentData)
+        // console.log(curDataAttrs)
+        // console.log(units.enter())
+
+        // let newGs = units.enter()
+        //     .append('g')
+        //     .attr("class", "unit")
+
+        // //newGs.merge(units)
+
+        // newGs.append('path')
+        //     .attr('d', d => curDataAttrs[d.id].shape)
+        //     .style('fill', d => curDataAttrs[d.id].color)
+        //     .attr('transform', d => plotXY(d, tx, tk));
+
+        // newGs.merge(units)
+        //     .selectAll('path')
+        //     .attr('d', d => curDataAttrs[d.id].shape)
+        //     .style('fill', d => curDataAttrs[d.id].color)
+        //     .attr('transform', d => plotXY(d, tx, tk));
+
+        // units.exit().remove();
+
+        // let elements = units.join("g")
+        //     .attr("class", "unit")
+        //     .attr('transform', d => plotXY(d, tx, tk))
+
+        //     // .join("path")
+        //     // .attr('d', function(d) {
+        //     //     console.log(d)
+        //     //     return curDataAttrs[d.id].shape
+        //     // })
+        // console.log(elements)
+
+        // elements.each(function(d) {
+        //     console.log(this);
+        //     console.log(d3.select(this));
+        //     d3.select(this)
+        //     .append('path')
+        //     .attr('d', function(y) {
+        //         return curDataAttrs[d.id].shape;
+        //     })
+
+        // })
+
+        //console.log(elements);
+        //elements
+        //d3.selectAll('.unit .d-path')
+        // elements.selectAll('.d-path')
+        // //.data(d)
+        // .data(currentData, d => d.id)
+        // // .enter()
+        // // .append('path')
+        // .join("path")
+        // .attr('class', 'd-path')
+        //     .attr('d', function(d) {
+        //         console.log(d)
+        //         return curDataAttrs[d.id].shape
+        //     })
+        //     .style('fill', d => curDataAttrs[d.id].color);
+
+        // elements
+        // .join("path")
+        //     .attr('d', d => curDataAttrs[d.id].shape)
+        //     .style('fill', d => curDataAttrs[d.id].color);
+
+        // let new_paths = elements
+        //     .enter()
+        //     .append('path')
+        // //.join("path")
+
+        // new_paths.merge(elements)
+        //     .attr('d', d => curDataAttrs[d.id].shape)
+        //     .style('fill', d => curDataAttrs[d.id].color);
     }
 }
 
@@ -342,41 +456,8 @@ function filterData(attr, lowValue, highValue) {
     // remove the selcted elements from current data
     //selection
     // between a range (including)
-
-    let filteredData = [];
-    let filteredCurDataAttrs = {};
-    /* for (let d of currentData) {
-        if (d.data[attr] >= lowValue && d.data[attr] <= highValue) {
-            filteredData.push(d);
-            filteredCurDataAttrs[d.id] = curDataAttrs[d.id];
-
-        }
-    } */
     let dat = dataset.filter(d => d[attr] >= lowValue && d[attr] <= highValue);
-    console.log(dat);
     setData(dat);
-    console.log('currentData', currentData);
-    // update global variables
-    /* curDataAttrs = { ...filteredCurDataAttrs };
-    currentData = filteredData;
-
-    /* let no_choco = filteredData.filter(function (d) {
-        return d.data['Chocolate'] == 0;
-    })
-    let choco = filteredData.filter(function (d) {
-        return d.data['Chocolate'] == 1;
-    }) */
-    /* console.log('attr', attr);
-    console.log('no_choco', no_choco);
-    console.log('choco', choco); 
-    console.log(filteredData)
-    console.log(curDataAttrs)
-    console.log(Object.keys(curDataAttrs).length)
-    console.log(filteredCurDataAttrs) */
-
-
-    // currentData is updated
-    //currentData = setData(currentData);
     groupByAttribute(currentData, attribute);
     updateVisualization();
 }
@@ -535,9 +616,15 @@ function detectOnePointerDoubleTap() {
     if (onePointerTappedTwice && evCacheContent.length === 1 && !twoPointersTappedTwice) {
         // select all unit vis on single pointer double tap
         selection = d3.selectAll('#chart-content .unit')
-            .classed("selected", false)
+            .classed("selected", true)
             .attr('r', circleRadius); // reset radius of unselected points;
+
+        //selection.classed("selected", true);
+        // selection.notSelectedItems()
+        //     .classed("selected", false)
+        //     .attr('r', circleRadius);
         console.log('1 pointer double tap');
+        console.log(selection);
 
         // reset value for next double tap
         onePointerTappedTwice = false;
@@ -782,6 +869,59 @@ function lassoEnd() {
     lasso.notSelectedItems()
         .classed("selected", false)
         .attr('r', circleRadius); // reset radius of unselected points
+
+    // color
+    // selection.data().forEach(d => {
+    //     curDataAttrs[d.id].color = 'pink';
+    // });
+    // updateVisualization();
+
+    // // shape
+    // selection.data().forEach(d => {
+    //     curDataAttrs[d.id].shape = squareShape();
+    // });
+    // updateVisualization();
+
+    // size
+    // selection.data().forEach(d => {
+    //     curDataAttrs[d.id].size = 300;
+    // });
+    // updateVisualization();
+
+    // svg icon
+    // console.log(imgSVGs)
+    useCustomIcons = true;
+    //d3.selectAll('.unit svg').style('fill', 'pink')
+    //d3.select(s).style('fill', curDataAttrs[id].color);
+
+
+    // console.log();
+    // let svg = imgSVGs[curDataAttrs[selection.data()[0].id].imgSvgId];
+    // d3.select(svg)
+    //     .attr('height', 18)
+    //     .attr('width', 18)
+    //     .style('fill', 'plum');
+    // change color
+    selection.data().forEach(d => {
+        let id = d.id;
+        curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+        curDataAttrs[d.id].color = 'pink';
+        d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
+    });
+
+    // change size
+    selection.data().forEach(d => {
+        let id = d.id;
+        curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+        curDataAttrs[d.id].color = 'pink';
+        d3.select(`.unit #unit-${id}`)
+        .attr('height', 30)
+        .attr('width', 30);
+    });
+    //iconSize = 3*iconSize;
+    //circleRadius = 2*circleRadius;
+    updateVisualization();
+
 };
 
 function unselectPoints() {
