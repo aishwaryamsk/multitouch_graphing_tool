@@ -44,4 +44,4 @@ https://flexiple.com/javascript/get-average-of-array-javascript/
 https://stackoverflow.com/questions/11832914/how-to-round-to-at-most-2-decimal-places-if-necessary
 https://www.w3schools.com/jsref/prop_color_value.asp
 https://bl.ocks.org/mbostock/1424037
-
+https://stackoverflow.com/questions/30474474/jquery-change-function-on-ionslider-not-working 

@@ -35,6 +35,7 @@ let curDataAttrs = {};
 // settings
 let duration = 1;
 let circleRadius = 7;
+let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 
@@ -56,6 +57,7 @@ let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
 let attrSortOder = 0; // 0: ascending, 1: descending
+let currSize = 20;
 
 let array = [d3.csv('dataset/candy-data.csv'), d3.xml('images/candy.svg')]
 Promise.all(array).then(function (data1) {
@@ -92,7 +94,7 @@ Promise.all(array).then(function (data1) {
             .style("cursor", "pointer")
             .attr("id", (d) => "shape-" + i)
             .attr("d", all_shapes[i])
-            .attr("fill", "#874612")
+            .attr("fill", "#0067cd")
             .attr("transform", "translate(10, 10)")
             .on('pointerdown', function (e, d) {
                 // console.log("att", e['target']['id']);
@@ -146,6 +148,13 @@ Promise.all(array).then(function (data1) {
         currSize = e.target.value;
         changeSize(e.target.value);
     }
+
+    // $(".slider").ionRangeSlider({
+    //     onFinish: function (data) {
+    //         // Called then action is done and mouse is released
+    //         console.log("slider used!", data.to);
+    //     },
+    // });
 
     d3.select("#dropdownMenuButton1")
         .text(attribute);
@@ -214,7 +223,7 @@ function updateVisualization() {
     let unitVisPadding = 1.5; //pixels
     setNumericScale();
 
-    let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
+    //let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -237,7 +246,7 @@ function updateVisualization() {
         // get max size in dataset
 
 
-        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * unitSize) + unitVisPadding));
+        numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
     }
 
     /* let the number of elements per row in each column be at least 1 */
@@ -256,8 +265,8 @@ function updateVisualization() {
         unitYScale.domain([1, Math.ceil(maxAttributeValueCount)]).range([height - unitVisHtMargin, 0]); // number of rows 
     } */
 
-    //let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
-    let yScaleHeight = 2 * unitSize * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
+    //let yScaleHeight = 2 * unitSize * (maxAttributeValueCount / numRowElements) * unitVisPadding;
     unitYScale.domain([0, Math.ceil(maxAttributeValueCount / numRowElements)])
         .range([height - unitVisHtMargin, height - unitVisHtMargin - yScaleHeight]);
 
@@ -487,7 +496,7 @@ function updateUnitViz(tx = 1, tk = 1) {
     }
 
     d3.selectAll(".unit svg rect")
-    .attr("fill", "none");
+        .attr("fill", "none");
 }
 
 function plotXY(d, tx = 1, tk = 1) {
@@ -538,6 +547,7 @@ function filterData(attr, lowValue, highValue) {
     // remove the selcted elements from current data
     //selection
     // between a range (including)
+    // console.log("inside filterData");
     let dat = dataset.filter(d => d[attr] >= lowValue && d[attr] <= highValue);
     setData(dat);
     groupByAttribute(currentData, attribute);
@@ -609,7 +619,11 @@ function setData(d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
         //dataset.push({ id: i, data: dataPt });
         currentData.push({ id: i, data: dataPt });
-        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), size: circleRadius, imgSvgId: 0 };
+        // console.log(d3.select(circleShape));
+        // console.log(d3.select(circleShape).data());
+        // console.log(circleShape.size(220));
+        // console.log(circleShape.size(31));
+        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0 };
         i++;
     }
     return currentData;
@@ -972,7 +986,7 @@ function lassoEnd() {
 
     // svg icon
     // console.log(imgSVGs)
-    useCustomIcons = true;
+    //useCustomIcons = true;
     //d3.selectAll('.unit svg').style('fill', 'pink')
     //d3.select(s).style('fill', curDataAttrs[id].color);
 
@@ -1006,8 +1020,10 @@ function lassoEnd() {
 
 };
 
-function unselectPoints() {
-    lasso.notSelectedItems()
+function deselectPoints() {
+    lasso.selectedItems()
+        .classed("selected", false);
+    //lasso.notSelectedItems()
     //.attr('r', circleRadius); // reset radius of unselected points
 }
 
@@ -1244,49 +1260,38 @@ function changeSizeByCol(colname, min, max) {
 }
 
 function changeColor(newColor) {
-    if (selection) {
+    // lasso selection can be [], or 0 selections as an object
+    if (selection.length !== 0 && selection.data().length !== 0) {
         if (useCustomIcons) {
             selection.data().forEach(d => {
-                let id = d.id;
-                curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-                curDataAttrs[id].color = newColor;
-                d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
+                //curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+                curDataAttrs[d.id].color = newColor;
             });
+            selection.selectAll('svg').style('fill', newColor);
         } else d3.selectAll(selection).style('fill', newColor);
 
-    } else {
-        d3.selectAll('.unit').style('fill', newColor);
-    }
+    } else d3.selectAll('.unit svg').style('fill', newColor);
     d3.selectAll("#shapes svg path").style('fill', newColor);
+    deselectPoints();
 }
 
 function changeSize(newSize) {
-    console.log("changing size", newSize);
-    if (selection) {
-        if (useCustomIcons) {
-
-        } else {
-            d3.selectAll(selection).style('size', newSize);
-            // selection.data().forEach(d => {
-            //     console.log(curDataAttrs[d.id])
-            //     curDataAttrs[d.id].size = newSize;
-            // });
-            //updateVisualization();
+    if (selection.length !== 0 && selection.data().length !== 0) {
+        if (useCustomIcons) selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
+        else {
+            d3.selectAll(selection).attr('height', newSize).attr('width', newSize);
         }
     } else {
-        // let reqsize = (newSize/4) + 15;
-        for (let i = 0; i < currentData.length; i++) {
-            let name = "#unit-icon-" + i + " svg";
-            console.log(d3.select(name))
-            d3.select(name).attr('width', newSize).attr('height', newSize);
+        if (useCustomIcons)
+            d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
+        else {
+            for (let i = 0; i < currentData.length; i++) {
+                let name = "#unit-icon-" + i + " svg";
+                d3.select(name).attr('width', newSize).attr('height', newSize);
+            }
         }
     }
-    for (let i = 0; i < currentData.length; i++) {
-        let name = "#unit-icon-" + i + " svg";
-        console.log(d3.select(name))
-        d3.select(name).attr('width', newSize).attr('height', newSize);
-    }
-    //d3.select(name).attr('width', newSize).attr('height', newSize);
+    deselectPoints();
 }
 
 function changeXAxis(index) {
@@ -1312,7 +1317,7 @@ function visualize(colindex) {
 }
 
 function findShape(shape) {
-    console.log(shape, shape.slice(6));
+    console.log("shape", shape, shape.slice(6));
 
     d3.selectAll(".unit svg path").remove();
     d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null)
@@ -1345,6 +1350,7 @@ function filterAxis(colName) {
         .append("input")
         .attr("type", "text")
         .attr("id", "double-range-slider")
+        .attr("class", "slider")
         .attr("name", "my_range")
         .attr("value", "");
 
@@ -1374,7 +1380,17 @@ function filterAxis(colName) {
         from: min,
         to: max,
         step: Math.round((max - min) * 10) / 100,
-        // grid: true
+        // onStart: function(data) {
+        //     console.log("onStart");
+        // },
+        // onChange: function(data) {
+        //     console.log("onChange");
+        // },
+        onFinish: function(data) {
+            // console.log("onFinish", data);
+            // console.log(data['from'], data['to'])
+            filterData(colName, data['from'], data['to'])
+        },
     });
 }
 
