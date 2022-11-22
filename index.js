@@ -52,7 +52,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = false;
+let useCustomIcons = true;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
@@ -977,7 +977,7 @@ function lassoEnd() {
 
     // svg icon
     // console.log(imgSVGs)
-    useCustomIcons = true;
+    //useCustomIcons = true;
     //d3.selectAll('.unit svg').style('fill', 'pink')
     //d3.select(s).style('fill', curDataAttrs[id].color);
 
@@ -1251,52 +1251,30 @@ function changeSizeByCol(colname, min, max) {
 }
 
 function changeColor(newColor) {
-    if (selection.length !== 0) {
+    // lasso selection can be [], or 0 selections as an object
+    if (selection.length !== 0 && selection.data().length !== 0) {
         if (useCustomIcons) {
             selection.data().forEach(d => {
-                let id = d.id;
-                curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-                curDataAttrs[id].color = newColor;
-                d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
+                //curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+                curDataAttrs[d.id].color = newColor;
             });
+            selection.selectAll('svg').style('fill', newColor);
         } else d3.selectAll(selection).style('fill', newColor);
 
-    } else {
-        d3.selectAll('.unit').style('fill', newColor);
-    }
+    } else d3.selectAll('.unit svg').style('fill', newColor);
     d3.selectAll("#shapes svg path").style('fill', newColor);
     deselectPoints();
 }
 
 function changeSize(newSize) {
-    if (selection.length !== 0) {
-        if (useCustomIcons) {
-            selection.data().forEach(d => {
-                //curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-                let name = "#unit-icon-" + d.id + " svg";
-                d3.select(name).attr('height', 30).attr('width', 30);
-            });
-        } else {
-            selection.data().forEach(d => {
-                //curDataAttrs[d.id].size = newSize;
-            });
-            updateVisualization();
-
-            //d3.selectAll(selection).style('size', newSize);
-            // selection.data().forEach(d => {
-            //     console.log(curDataAttrs[d.id])
-            //     curDataAttrs[d.id].size = newSize;
-            // });
-            //updateVisualization();
+    if (selection.length !== 0 && selection.data().length !== 0) {
+        if (useCustomIcons) selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
+        else {
+            d3.selectAll(selection).attr('height', newSize).attr('width', newSize);
         }
     } else {
-        if (useCustomIcons) {
-            for (let i = 0; i < currentData.length; i++) {
-                let name = "#unit-icon-" + i + " svg";
-                d3.select(name).attr('width', newSize).attr('height', newSize);
-            }
-            
-        }
+        if (useCustomIcons)
+            d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
         else {
             for (let i = 0; i < currentData.length; i++) {
                 let name = "#unit-icon-" + i + " svg";
