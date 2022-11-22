@@ -52,7 +52,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = true;
+let useCustomIcons = false;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let imgSVGs = [];
@@ -98,7 +98,7 @@ Promise.all(array).then(function (data1) {
             .attr("transform", "translate(10, 10)")
             .on('pointerdown', function (e, d) {
                 // console.log("att", e['target']['id']);
-                findShape(e['target']['id']);
+                changeShape(e['target']['id']);
             })
     }
 
@@ -338,10 +338,6 @@ function updateUnitViz(tx = 1, tk = 1) {
             .attr("data-placement", "top")
             .attr("title", (d, i) => d['data']['Candy'])
             .attr("id", (d, i) => `unit-icon-${i}`)
-            //.attr("xlink:href", "https://s27.postimg.org/h3xjrsnrn/dcpolicycenter.png")
-            // .attr("d", function (d) {
-            //     let node = document.importNode('/images/candy.svg', true);
-            //})
             .attr('transform', d => plotXY(d, tx, tk))
 
 
@@ -1276,20 +1272,25 @@ function changeColor(newColor) {
 }
 
 function changeSize(newSize) {
-    if (selection.length !== 0 && selection.data().length !== 0) {
-        if (useCustomIcons) selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
-        else {
-            d3.selectAll(selection).attr('height', newSize).attr('width', newSize);
-        }
-    } else {
-        if (useCustomIcons)
-            d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
-        else {
-            for (let i = 0; i < currentData.length; i++) {
-                let name = "#unit-icon-" + i + " svg";
-                d3.select(name).attr('width', newSize).attr('height', newSize);
-            }
-        }
+    // if (selection.length !== 0 && selection.data().length !== 0) {
+    //     if (useCustomIcons) selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
+    //     else {
+    //         d3.selectAll(selection).attr('height', newSize).attr('width', newSize);
+    //     }
+    // } else {
+    //     if (useCustomIcons)
+    //         d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
+    //     else {
+    //         for (let i = 0; i < currentData.length; i++) {
+    //             let name = "#unit-icon-" + i + " svg";
+    //             d3.select(name).attr('width', newSize).attr('height', newSize);
+    //         }
+    //     }
+    // }
+
+    for (let i = 0; i < currentData.length; i++) {
+        let name = "#unit-icon-" + i + " svg";
+        d3.select(name).attr('width', newSize).attr('height', newSize);
     }
     deselectPoints();
 }
@@ -1316,16 +1317,23 @@ function visualize(colindex) {
     updateVisualization();
 }
 
-function findShape(shape) {
+function changeShape(shape) {
     console.log("shape", shape, shape.slice(6));
-
-    d3.selectAll(".unit svg path").remove();
-    d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null)
-    d3.selectAll(".unit svg")
-        .attr("width", currSize).attr("height", currSize)
-        .append("path").attr("d", all_shapes[shape.slice(6)])
-        .attr("transform", "scale(8) translate(10, 10)")
-    // .attr("transform", "translate(25, 25)")
+    console.log(d3.select(".unit svg path"));
+    
+    // changing from user svg to d3 shape
+    if (!d3.select(".unit svg path").empty()) {
+        d3.selectAll(".unit svg path").remove();
+        d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null)
+        d3.selectAll(".unit svg")
+            .attr("width", currSize).attr("height", currSize)
+            .append("path").attr("d", all_shapes[shape.slice(6)])
+            .attr("transform", "scale(8) translate(10, 10)");
+    }
+    // changing from d3 shape to user svg
+    else {
+        d3.selectAll(".unit path").remove();
+    }
 }
 
 function sortAxis(colName) {
@@ -1386,7 +1394,7 @@ function filterAxis(colName) {
         // onChange: function(data) {
         //     console.log("onChange");
         // },
-        onFinish: function(data) {
+        onFinish: function (data) {
             // console.log("onFinish", data);
             // console.log(data['from'], data['to'])
             filterData(colName, data['from'], data['to'])
