@@ -13,6 +13,7 @@ let attribute = null;
 let tooltipTriggerList;
 let col_values;
 let col_types;
+let newColor = "#0067cd";
 
 let tip;
 
@@ -26,6 +27,7 @@ let dataset = [];
 let columns = [];
 
 let isNumericScale = false;
+let prevRadio = null;
 
 // Holds the current data displayed in the chart
 let currentData = [];
@@ -42,6 +44,7 @@ let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 let currentFtrs = { color: '#0067cd', shapeId: 8, imgSvgId: 0, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
+let shapeNum = 7;
 
 /* Multi-touch or multi-pointers */
 // Preserving a pointer's event state during various event phases
@@ -107,6 +110,22 @@ Promise.all(array).then(function (data1) {
             })
     }
 
+    lastShape = d3.select("#shapes")
+        .append("xhtml:body")
+        .attr("id", "shape-" + shapeNum)
+        .html(imgSVG['activeElement']['outerHTML'])
+        .style("display", "inline");
+
+    d3.selectAll("#shape-" + shapeNum + " svg")
+        .attr("id", "shape-" + shapeNum);
+
+    lastShape.on('pointerdown', function (e, d) {
+        // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
+        changeShape(e['explicitOriginalTarget']['parentElement']['id']);
+    })
+
+    d3.select("#shapes body svg")
+        .style("fill", "#0067cd")
 
     // CHANGE LATER?: initially, use chocolate as an attribute to group on
     //attribute = 'fruity';
@@ -232,7 +251,7 @@ function updateVisualization() {
         console.log(err);
     } */
     //unitVisPadding = 1.5; //pixels
-    d3.selectAll(".unit").remove();
+    //d3.selectAll(".unit").remove();
     setNumericScale();
 
     //let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
@@ -564,15 +583,32 @@ function readFile(e) {
 function importImgSVG(data) {
     let parser = new DOMParser();
     let imgSVG = parser.parseFromString(data, "image/svg+xml");
-
-
     let svgNode = imgSVG.getElementsByTagName("svg")[0];
+
     d3.select(svgNode)
         .attr('height', 18)
         .attr('width', 18)
         .style('fill', 'plum');
     imgSVGs.push(svgNode);
-    console.log('imgSVG', imgSVGs);
+
+    shapeNum += 1;
+
+    lastShape = d3.select("#shapes")
+        .append("xhtml:body")
+        .attr("id", "shape-" + shapeNum)
+        .html(imgSVG['activeElement']['outerHTML'])
+        .style("display", "inline");
+
+    d3.selectAll("#shape-" + shapeNum + " svg")
+        .attr("id", "shape-" + shapeNum);
+
+    lastShape.on('pointerdown', function (e, d) {
+        // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
+        changeShape(e['explicitOriginalTarget']['parentElement']['id']);
+    })
+
+    d3.select("#shapes body svg")
+        .style("fill", newColor);
 }
 
 function filterData(attr, lowValue, highValue) {
@@ -1142,7 +1178,15 @@ function createDropDown(data, cols) {
 
             let index = columns.indexOf(d);
             console.log("att", d, index);
+            attribute = d;
             changeXAxis(index);
+
+            if (d == "Candy" || Object.keys(attrValuesCount).length === 2) {
+                d3.selectAll(".form-check").style("display", "block");
+            } else {
+                d3.selectAll(".form-check").style("display", "none");
+            }
+
         });
 
     d3.select("#dropdown-menu3")
@@ -1155,7 +1199,6 @@ function createDropDown(data, cols) {
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
         .on('pointerdown', function (e, d) {
             console.log("att", d);
-            // changeXAxis(d);
         });
 
     d3.select("#dropdown-menu4")
@@ -1171,7 +1214,6 @@ function createDropDown(data, cols) {
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
         .on('pointerdown', function (e, d) {
             console.log("att", d);
-            // changeXAxis(d);
         });
 
     d3.select("#dropdown-menu5")
@@ -1385,7 +1427,7 @@ function changeShape(shapeId) {
                 curDataAttrs[d.id].shapeId = shapeId;
             } else {
                 d3.select(`#unit-icon-${id}`).remove();
-                
+
                 //let s = imgSVGs[curDataAttrs[id].imgSvgId];
                 let s = imgSVGs[shapeId - numInitialShapes];
 
@@ -1584,10 +1626,16 @@ function changeXAxis(index) {
     d3.select('#x-axis-label')
         .text(columns[index]);
 
+    isNumericScale = false;
 
     d3.selectAll(".unit").remove();
     d3.select('.unit svg').remove();
-    visualize(index);
+    // visualize(index);
+
+    groupByAttribute(currentData, attribute);
+    createVisualization();
+    updateVisualization();
+
 }
 
 function visualize(colindex) {
@@ -1777,3 +1825,66 @@ function changeTab() {
         .classed("active", true)
         .classed("show", true)
 }
+
+
+function handleClick(radio) {
+
+    attrSortOder = radio.value;
+    updateXAttribute(attribute);
+}
+
+//Code credits: https://codepen.io/eleviven/pen/eYmwzLp
+
+let onlongtouch = false;
+let showToolTip = false;
+let timer = false;
+let timer2 = false;
+
+function touchStart() {
+    if (!timer) {
+        timer = setTimeout(onlongtouch, 800);
+    }
+}
+
+function touchEnd() {
+    if (timer) {
+        clearTimeout(timer)
+        timer = false;
+    }
+}
+
+onlongtouch = function () {
+    // d3.select("#side-panel").style("background-color", "black")
+
+    if (attrSortOder == 0) {
+        attrSortOder = 1;
+    } else {
+        attrSortOder = 0;
+    }
+    updateXAttribute(attribute);
+}
+
+// function touchStartTip(){
+//     if (!timer2) {
+//       timer2 = setTimeout(showToolTip, 800);
+//     }
+//   }
+
+// function touchEndTip(){
+//     if (timer2) {
+//       clearTimeout(timer2)
+//       timer2 = false;
+//     }
+// }
+
+// showToolTip = function(){
+//     d3.select("#side-panel").style("background-color", "black");    
+// }
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelector("#chart").addEventListener("touchstart", touchStart);
+    document.querySelector("#chart").addEventListener("touchend", touchEnd);
+
+    //   document.querySelector("path").addEventListener("touchstart", touchStartTip);
+    //   document.querySelector("path").addEventListener("touchend", touchEndTip);
+})
