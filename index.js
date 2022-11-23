@@ -1010,8 +1010,8 @@ let lasso = d3.lasso()
     .on("draw", lassoDraw)
     .on("end", function () {
         lassoEnd();
-        updateSelection();
-        changeTab();
+        
+//         changeTab();
         //console.log('selectedItems', lasso.selectedItems());
     });
 
@@ -1106,6 +1106,7 @@ function lassoEnd() {
     //iconSize = 3*iconSize;
     //circleRadius = 2*circleRadius;
     updateVisualization(); */
+    updateSelection();
 
 };
 
@@ -1421,22 +1422,22 @@ function updateShapes(selection, shape, shapeId) {
         if (shapeId < numInitialShapes) {
             d3.select(`#unit-icon-${id}`).classed("selected", false);
             d3.select(`#unit-icon-${id}`).remove();
-//             units.append('path')
-//                 .attr('d', shape.size(currentFtrs.size * 6)())
-//                 .attr('id', `unit-icon-${id}`)
-//                 .attr("class", "unit")
-//                 .attr('fill', curDataAttrs[id].color)
-//                 .attr('transform', `${plotXY(dataPt)}`);
-            
-            d3.select(`#unit-icon-${id}`)
-                .attr('d', "disable")
-                .attr('fill', "disable")
-                .attr('transform', "disable");
-
-            d3.select(`#unit-icon-${id}`)
-                .attr('d', all_shapes[shapeId])
+            units.append('path')
+                .attr('d', shape.size(currentFtrs.size * 6)())
+                .attr('id', `unit-icon-${id}`)
+                .attr("class", "unit")
                 .attr('fill', curDataAttrs[id].color)
                 .attr('transform', `${plotXY(dataPt)}`);
+            
+//             d3.select(`#unit-icon-${id}`)
+//                 .attr('d', "disable")
+//                 .attr('fill', "disable")
+//                 .attr('transform', "disable");
+
+//             d3.select(`#unit-icon-${id}`)
+//                 .attr('d', all_shapes[shapeId])
+//                 .attr('fill', curDataAttrs[id].color)
+//                 .attr('transform', `${plotXY(dataPt)}`);
             
             curDataAttrs[id].shapeId = shapeId;
         } else {
