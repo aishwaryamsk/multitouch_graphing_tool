@@ -41,7 +41,7 @@ let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 //let currentFtrs = { color: '#0067cd', shape: circleShape.size(200), imgSvgId: 0, size: 20 }; // attributes applied to all data points
-let currentFtrs = { color: '#0067cd', shapeId: 8, imgSvgId: 0, size: 20 }; // attributes applied to all data points
+let currentFtrs = { color: '#0067cd', shapeId: 2, imgSvgId: 0, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
 let shapeNum = 7;
@@ -56,7 +56,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = true;
+let useCustomIcons = false;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let unitVisPadding = 1.5;
@@ -124,8 +124,7 @@ Promise.all(array).then(function (data1) {
 
     lastShape.on('pointerdown', function (e, d) {
         // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
-        // console.log("e of selected shape is ", e['target']['parentElement']['id'])
-        changeShape(e['target']['parentElement']['id']);
+        changeShape(e['explicitOriginalTarget']['parentElement']['id'].slice(6));
     })
 
     d3.select("#shapes body svg")
@@ -1436,6 +1435,7 @@ function changeShape(shapeId) {
                 d3.select(`#unit-icon-${id}`).remove();
 
                 //let s = imgSVGs[curDataAttrs[id].imgSvgId];
+                console.log(shapeId);
                 let s = imgSVGs[shapeId - numInitialShapes];
 
                 d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
