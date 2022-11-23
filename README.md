@@ -1,7 +1,13 @@
 # Multi Touch Graphing Tool
 A graphing tool to explore data using multi-touch gestures.
 
-**Link:** [View Tool](https://nive21.github.io/)
+**Link:** [View Tool](https://aishwaryamsk.github.io/multitouch_graphing_tool/index.html)
+
+Dataset source -- Kaggle: https://www.kaggle.com/datasets/fivethirtyeight/the-ultimate-halloween-candy-power-ranking
+
+Libraries used:
+
+Lasso plugin (copyright protected): https://github.com/skokenes/d3-lasso
 
 
 References used:
@@ -45,3 +51,8 @@ https://stackoverflow.com/questions/11832914/how-to-round-to-at-most-2-decimal-p
 https://www.w3schools.com/jsref/prop_color_value.asp
 https://bl.ocks.org/mbostock/1424037
 https://stackoverflow.com/questions/30474474/jquery-change-function-on-ionslider-not-working 
+https://stackoverflow.com/questions/8838648/onchange-event-handler-for-radio-button-input-type-radio-doesnt-work-as-one
+
+Code credits for long touch/press:
+https://codepen.io/eleviven/pen/eYmwzLp
+https://codepen.io/thetallweeks/pen/AoQjjK
