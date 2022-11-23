@@ -39,7 +39,7 @@ let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 //let currentFtrs = { color: '#0067cd', shape: circleShape.size(200), imgSvgId: 0, size: 20 }; // attributes applied to all data points
-let currentFtrs = { color: '#0067cd', shapeId: 2, imgSvgId: 0, size: 20 }; // attributes applied to all data points
+let currentFtrs = { color: '#0067cd', shapeId: 8, imgSvgId: 0, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
 
@@ -60,6 +60,7 @@ let unitVisPadding = 1.5;
 let imgSVGs = [];
 let attrSortOder = 0; // 0: ascending, 1: descending
 let currSize = 20;
+const numInitialShapes = 7;
 
 let array = [d3.csv('dataset/candy-data.csv'), d3.xml('images/candy.svg')]
 Promise.all(array).then(function (data1) {
@@ -96,11 +97,13 @@ Promise.all(array).then(function (data1) {
             .style("cursor", "pointer")
             .attr("id", (d) => "shape-" + i)
             .attr("d", all_shapes[i])
+            //.attr("d", i)
             .attr("fill", "#0067cd")
             .attr("transform", "translate(10, 10)")
             .on('pointerdown', function (e, d) {
                 // console.log("att", e['target']['id']);
-                findShape(e['target']['id']);
+                //findShape(e['target']['id']);
+                changeShape(e['target']['id'].slice(6));
             })
     }
 
@@ -229,6 +232,7 @@ function updateVisualization() {
         console.log(err);
     } */
     //unitVisPadding = 1.5; //pixels
+    d3.selectAll(".unit").remove();
     setNumericScale();
 
     //let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
@@ -330,18 +334,36 @@ function updateImgSVG() {
 
 function updateUnitViz(tx = 1, tk = 1) {
 
-    let units = d3.selectAll("#chart-content .unit-vis")
-        .selectAll('.unit')
-        .data(currentData, d => d.id);
+
     //.data(currentData);
 
+    // split the data
+    // let customSvgData = [];
+    // let shapeData = [];
+    // for (let dataPt of currentData) {
+    //     if (curDataAttrs[dataPt.id].shapeId >= numInitialShapes)
+    //         customSvgData.push(dataPt);
+    //     else shapeData.push(dataPt);
+    // }
+    // console.log(currentData);
+    // console.log(customSvgData);
+    // console.log(shapeData);
+    let units = d3.selectAll("#chart-content .unit-vis")
+        .selectAll('path.unit')
+        .data(currentData, d => d.id);
+
     if (useCustomIcons) {
+        //if (customSvgData.length !== 0) {
+        let units = d3.selectAll("#chart-content .unit-vis")
+            .selectAll('g.unit')
+            .data(currentData, d => d.id);
+
         let svgs = units.join("g") //image
             .attr("class", "unit")
             .attr("data-toggle", "tooltip")
             .attr("data-placement", "top")
             .attr("title", (d, i) => d['data']['Candy'])
-            .attr("id", (d, i) => `unit-icon-${i}`)
+            .attr("id", (d, i) => `unit-icon-${d.id}`)
             .attr('transform', d => plotXY(d, tx, tk));
 
         console.log(svgs.data().length)
@@ -358,11 +380,12 @@ function updateUnitViz(tx = 1, tk = 1) {
         units.exit().remove(); */
 
 
-        if (d3.select('.unit svg').empty()) {
+        if (d3.select('g.unit svg').empty()) {
+
             // create
             svgs.each(function (d) {
                 // clones whole subtree -- has to be cloned for each instance of the candy
-                let s = imgSVGs[curDataAttrs[d.id].imgSvgId]
+                let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
                 let id = d.id;
                 d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
                 this.append(s.cloneNode(true))
@@ -400,12 +423,21 @@ function updateUnitViz(tx = 1, tk = 1) {
                return d3.select(d).attr('fill');
            }) */
 
-    } else {
-        units.join("path")
-            .attr("class", "unit")
-            .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
-            .style('fill', d => curDataAttrs[d.id].color)
-            .attr('transform', d => plotXY(d, tx, tk));
+    }
+
+    //if (shapeData.length !== 0) {
+    else {
+
+
+        if (d3.select('path.unit').empty()) {
+            units.enter()
+                .append("path")
+                .attr("class", "unit")
+                .attr("id", (d, i) => `unit-icon-${d.id}`)
+                .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
+                .style('fill', d => curDataAttrs[d.id].color)
+                .attr('transform', d => plotXY(d, tx, tk));
+        }
 
         // units.join("g")
         //     .attr("class", "unit")
@@ -547,15 +579,15 @@ function filterData(attr, lowValue, highValue) {
     // remove the selcted elements from current data
     //selection
     // between a range (including)
-    curDataAttrs = {};
     currentData = [];
     for (let d of allData) {
         if (d.data[attr] >= lowValue && d.data[attr] <= highValue) {
             currentData.push(d);
-            curDataAttrs[d.id] = { color: currentFtrs.color, shape: currentFtrs.shapeId, imgSvgId: currentFtrs.imgSvgId, size: currentFtrs.size };
-            console.log(curDataAttrs[d.id])
+            //curDataAttrs[d.id] = { color: currentFtrs.color, shape: currentFtrs.shapeId, imgSvgId: currentFtrs.imgSvgId, size: currentFtrs.size };
+            //console.log(curDataAttrs[d.id])
         }
     }
+
     d3.selectAll(".unit").remove();
     groupByAttribute(currentData, attribute);
     updateVisualization();
@@ -618,6 +650,7 @@ function groupByAttribute(data, attribute) {
     return data;
 }
 
+// called once on load
 function setData(d) {
     let i = 0;
     curDataAttrs = {};
@@ -626,7 +659,7 @@ function setData(d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
         //dataset.push({ id: i, data: dataPt });
         currentData.push({ id: i, data: dataPt });
-        curDataAttrs[i] = { color: '#0067cd', shapeId: 2, imgSvgId: 0, size: 20 };
+        curDataAttrs[i] = { color: currentFtrs.color, shapeId: currentFtrs.shapeId, imgSvgId: 0, size: currentFtrs.size };
         i++;
     }
     return currentData;
@@ -1251,12 +1284,15 @@ function changeSizeByCol(colname, min, max) {
     d3.select("#dropdownMenuButton5")
         .text(colname);
 
-    for (let i = 0; i < currentData.length; i++) {
-        let name = "#unit-icon-" + i + " svg";
-        let currsize = currentData[i]['data'][colname];
+    //for (let i = 0; i < currentData.length; i++) {
+    for (let d of currentData) {
+        //let name = "#unit-icon-" + i + " svg";
+        let name = "#unit-icon-" + d.id + " svg";
+        //let currsize = currentData[i]['data'][colname];
+        let currsize = d.data[colname];
         let reqsize = (((currsize - min) * (40 - 10)) / (max - min)) + 10;
 
-        console.log("curr", reqsize);
+        //console.log("curr", reqsize);
         d3.select(name).attr('width', reqsize).attr('height', reqsize);
     }
 }
@@ -1290,13 +1326,13 @@ function changeSize(newSize) {
     // lasso selected points
     if (selection.length !== 0 && selection.data().length !== 0) {
         if (useCustomIcons) {
-            if (useCustomIcons) unitVisHtMargin = newSize;
+            //if (useCustomIcons) unitVisHtMargin = newSize;
             selection.data().forEach(d => {
                 curDataAttrs[d.id].size = newSize;
             });
             selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
         } else {
-            if (useCustomIcons) unitVisHtMargin = newSize * 6;
+            //if (useCustomIcons) unitVisHtMargin = newSize * 6;
             d3.selectAll(selection).attr('d', function (d) {
                 curDataAttrs[d.id].size = newSize * 6;
                 return all_shapes[curDataAttrs[d.id].shapeId].size(newSize * 6)();
@@ -1305,26 +1341,220 @@ function changeSize(newSize) {
     } // all data points
     else {
         if (useCustomIcons) {
-            if (useCustomIcons) unitVisHtMargin = newSize;
+            //if (useCustomIcons) unitVisHtMargin = newSize;
             d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
         } else {
-            if (useCustomIcons) unitVisHtMargin = newSize * 6;
+            //if (useCustomIcons) unitVisHtMargin = newSize * 6;
             currentFtrs.size = newSize * 6;
+            d3.selectAll('.unit').attr('d', function (d) {
+                return all_shapes[curDataAttrs[d.id].shapeId].size(currentFtrs.size)();
+            }).attr('fill', d => curDataAttrs[d.id].color);
+        }
+    }
+    // if (useCustomIcons)
+    //     unitVisPadding = newSize * 0.07;
+    //updateVisualization();
+    //deselectPoints();
+}
+
+function changeShape(shapeId) {
+    currentFtrs.shape = shapeId;
+
+    let isNewShapeCustomIcon = shapeId >= numInitialShapes;
+    let shape = shapeId < numInitialShapes ? all_shapes[shapeId] : imgSVGs[shapeId - numInitialShapes];
+    console.log(isNewShapeCustomIcon);
+
+
+    if (selection.length !== 0 && selection.data().length !== 0) {
+        selection.data().forEach(d => {
+            let units = d3.selectAll('.unit-vis');
+            let id = d.id;
+            console.log(d3.select(d));
+            console.log(d3.select(`#unit-icon-${d.id} svg`));
+            console.log(d3.select(`#unit-icon-${d.id} svg`).empty());
+            // if path, remove path
+            //d3.select(`#unit-icon-${d.id} svg`).empty()
+            if (shapeId < numInitialShapes) {
+                console.log('append path')
+                d3.select(`#unit-icon-${d.id}`).remove();
+                units.append('path')
+                    .attr('d', shape.size(currentFtrs.size * 6)())
+                    .attr('id', `unit-icon-${id}`)
+                    .attr('fill', curDataAttrs[d.id].color)
+                    .attr('transform', `${plotXY(d)} translate(10, 10)`);
+                curDataAttrs[d.id].shapeId = shapeId;
+            } else {
+                d3.select(`#unit-icon-${id}`).remove();
+                
+                //let s = imgSVGs[curDataAttrs[id].imgSvgId];
+                let s = imgSVGs[shapeId - numInitialShapes];
+
+                d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
+                console.log(d3.select(s))
+                let g = units.append('g')
+                    .attr("class", "unit")
+                    .attr("data-toggle", "tooltip")
+                    .attr("data-placement", "top")
+                    .attr("title", d['data']['Candy'])
+                    .attr("id", `unit-icon-${d.id}`)
+                    .attr('transform', plotXY(d));
+
+                g.node().append(s.cloneNode(true));
+                curDataAttrs[d.id].shapeId = shapeId;
+            }
+        });
+    }
+
+}
+
+function changeShape2(shapeId) {
+    currentFtrs.shape = shapeId;
+    // if (!useCustomIcons)
+    //     unitVisPadding = iconSize;
+
+    let isNewShapeCustomIcon = shapeId >= numInitialShapes;
+    let shape = shapeId < numInitialShapes ? all_shapes[shapeId] : imgSVGs[shapeId - numInitialShapes];
+    console.log(isNewShapeCustomIcon);
+    //isNewShapeCustomIcon = true;
+    // lasso selected points
+    if (selection.length !== 0 && selection.data().length !== 0) {
+        // changing from custom svg icon to custom svg icon
+        // if (useCustomIcons && isNewShapeCustomIcon) {
+        //     selection.data().forEach(d => {
+        //         curDataAttrs[d.id].shape = shape;
+        //     });
+        //     selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
+        // }
+        // changing from custom svg icon to shape
+        if (useCustomIcons && !isNewShapeCustomIcon) {
+            let units = d3.selectAll('.unit-vis');
+            // append path
+            selection.data().forEach(d => {
+                console.log(d3.select(d));
+                console.log(d3.select(`#unit-icon-${d.id}`));
+                if (d3.select(`#unit-icon-${d.id}`).select('svg').empty()) {
+                    console.log('append path')
+                    d3.select(`#unit-icon-${d.id}`).remove();
+                    units.append('path')
+                        .attr('d', shape.size(currentFtrs.size * 6)())
+                        .attr('fill', curDataAttrs[d.id].color)
+                        .attr('transform', `${plotXY(d)} translate(10, 10)`);
+                    curDataAttrs[d.id].shapeId = shapeId;
+                } else {
+                    d3.select(`#unit-icon-${d.id}`).remove();
+
+                    let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
+                    d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
+                    units.append('g')
+                        .attr("class", "unit")
+                        .attr("data-toggle", "tooltip")
+                        .attr("data-placement", "top")
+                        .attr("title", d['data']['Candy'])
+                        .attr("id", `unit-icon-${d.id}`)
+                        .attr('transform', plotXY(d, tx, tk))
+
+                        .append(s.cloneNode(true))
+                        //.append('svg')
+                        .attr('id', `unit-${id}`)
+                        //.attr('d', shape.size(currentFtrs.size * 6)())
+                        .attr('fill', curDataAttrs[d.id].color)
+                    //.attr('transform', `${plotXY(d)} translate(10, 10)`);
+                    curDataAttrs[d.id].shapeId = shapeId;
+                }
+
+                // let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
+                // let id = d.id;
+                // d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
+                // this.append(s.cloneNode(true))
+
+            });
+            // d3.selectAll(selection).attr('d', function (d) {
+            //     curDataAttrs[d.id].size = newSize * 6;
+            //     return all_shapes[curDataAttrs[d.id].shapeId].size(newSize * 6)();
+            // });
+
+            // if (!d3.select(".unit svg").empty()) {
+            //     //d3.selectAll(".unit svg").remove();
+            //     selection.selectAll('svg').remove();
+            //     //d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null);
+            //     //d3.selectAll(".unit")
+            //     d3.selectAll(selection)
+            //         //.attr("width", currSize).attr("height", currSize)
+            //         .append("path").attr("d", all_shapes[shape.slice(6)])
+            //         .attr("transform", "scale(8) translate(10, 10)");
+            // }
+
+
+        }
+        //changing from one shape to another
+        else if (!useCustomIcons && !isNewShapeCustomIcon) {
+            // selection.data().forEach(d => {
+            //     // units.append('path')
+            //         .attr('d', shape.size(currentFtrs.size * 6)())
+            //         .attr('fill', curDataAttrs[d.id].color)
+            //         .attr('transform', `${plotXY(d)} translate(10, 10)`);
+            //     curDataAttrs[d.id].shapeId = shapeId;
+            // });
+            d3.selectAll(selection)
+                .attr('d', shape.size(currentFtrs.size)())
+                .attr('fill', curDataAttrs[d.id].color)
+                .attr('transform', `${plotXY(d)} translate(10, 10)`);
+            curDataAttrs[d.id].shapeId = shapeId;
+        }
+        // changing from shape to custom svg icon
+        else if (!useCustomIcons && isNewShapeCustomIcon) {
+            console.log('here')
+            console.log(selection)
+            console.log(selection.selectAll('path').empty())
+            if (!selection.empty()) {
+                //let s = imgSVGs[curDataAttrs[d.id].imgSvgId]
+                //let s = imgSVGs[imgSvgId]
+                let s = imgSVGs[0]
+                //selection.selectAll('path').remove();
+                //d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null);
+                //d3.selectAll(".unit")
+                console.log(selection);
+                selection.each(function (d) {
+                    console.log(d3.select(this))
+                })
+                selection.append('svg')
+                    .attr("xmlns", null)
+                    .append(s.cloneNode(true))
+                //.attr("width", currSize).attr("height", currSize)
+                //.append("path").attr("d", all_shapes[shape.slice(6)])
+                //.append("path").attr("d", all_shapes[shape.slice(6)])
+                //.attr("transform", "scale(8) translate(10, 10)");
+
+
+                //let id = d.id;
+                //d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
+                //this.append(s.cloneNode(true))
+            }
+            // changing from shape icon to shape icon
+            //!useCustomIcons && !isNewShapeCustomIcon
+            // else if {
+
+            // }
+
+            // d3.selectAll(selection).attr('d', function (d) {
+            //     curDataAttrs[d.id].size = newSize * 6;
+            //     return all_shapes[curDataAttrs[d.id].shapeId].size(newSize * 6)();
+            // });
+        }
+
+
+    } // all data points
+    else {
+        if (useCustomIcons) {
+            d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
+        } else {
+            currentFtrs.shape = shape;
             d3.selectAll('.unit').attr('d', function (d) {
                 return all_shapes[curDataAttrs[d.id].shapeId].size(currentFtrs.size)();
             }).attr('fill', d => curDataAttrs[d.id].color);;
         }
     }
-    if (useCustomIcons)
-        unitVisPadding = newSize * 0.07;
-    updateVisualization();
-    //deselectPoints();
-}
 
-function changeShape() {
-    currentFtrs.shape = shape;
-    if (!useCustomIcons)
-        unitVisPadding = iconSize;
     //shape
     // lasso selection
     // if (selection.length !== 0 && selection.data().length !== 0) {
