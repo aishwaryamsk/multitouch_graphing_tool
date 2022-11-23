@@ -1289,13 +1289,13 @@ function changeSize(newSize) {
     // lasso selected points
     if (selection.length !== 0 && selection.data().length !== 0) {
         if (useCustomIcons) {
-            unitVisHtMargin = newSize;
+            if (useCustomIcons) unitVisHtMargin = newSize;
             selection.data().forEach(d => {
                 curDataAttrs[d.id].size = newSize;
             });
             selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
         } else {
-            unitVisHtMargin = newSize*6;
+            if (useCustomIcons) unitVisHtMargin = newSize*6;
             d3.selectAll(selection).attr('d', function (d) {
                 curDataAttrs[d.id].size = newSize*6;
                 return all_shapes[curDataAttrs[d.id].shapeId].size(newSize*6)();
@@ -1304,10 +1304,10 @@ function changeSize(newSize) {
     } // all data points
     else {
         if (useCustomIcons) {
-            unitVisHtMargin = newSize;
+            if (useCustomIcons) unitVisHtMargin = newSize;
             d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
         } else {
-            unitVisHtMargin = newSize*6;
+            if (useCustomIcons) unitVisHtMargin = newSize*6;
             currentFtrs.size = newSize * 6;
             d3.selectAll('.unit').attr('d', function (d) {
                 curDataAttrs[d.id].size = currentFtrs.size;
