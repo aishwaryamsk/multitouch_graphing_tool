@@ -53,7 +53,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = false;
+let useCustomIcons = true;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let unitVisPadding = 1.5;
@@ -1266,20 +1266,21 @@ function changeColor(newColor) {
     // lasso selection can be [], or 0 selections as an object
     if (selection.length !== 0 && selection.data().length !== 0) {
         if (useCustomIcons) {
-            selection.data().forEach(d => {
-                //curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-                curDataAttrs[d.id].color = newColor;
-            });
             selection.selectAll('svg').style('fill', newColor);
-        } else {
-            d3.selectAll(selection).style('fill', newColor);
-        }
+        } else d3.selectAll(selection).style('fill', newColor);
+        selection.data().forEach(d => {
+            //curDataAttrs[id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
+            curDataAttrs[d.id].color = newColor;
+        });
     } else {
         // applied to all data points
         if (useCustomIcons)
             d3.selectAll('.unit svg').style('fill', newColor);
         else d3.selectAll('.unit').style('fill', newColor);
         currentFtrs.color = newColor;
+        Object.values(curDataAttrs).forEach(d => {
+            d.color = newColor;
+        });
     }
     d3.selectAll("#shapes svg path").style('fill', newColor);
     //deselectPoints();
@@ -1295,10 +1296,10 @@ function changeSize(newSize) {
             });
             selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
         } else {
-            if (useCustomIcons) unitVisHtMargin = newSize*6;
+            if (useCustomIcons) unitVisHtMargin = newSize * 6;
             d3.selectAll(selection).attr('d', function (d) {
-                curDataAttrs[d.id].size = newSize*6;
-                return all_shapes[curDataAttrs[d.id].shapeId].size(newSize*6)();
+                curDataAttrs[d.id].size = newSize * 6;
+                return all_shapes[curDataAttrs[d.id].shapeId].size(newSize * 6)();
             });
         }
     } // all data points
@@ -1307,16 +1308,15 @@ function changeSize(newSize) {
             if (useCustomIcons) unitVisHtMargin = newSize;
             d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
         } else {
-            if (useCustomIcons) unitVisHtMargin = newSize*6;
+            if (useCustomIcons) unitVisHtMargin = newSize * 6;
             currentFtrs.size = newSize * 6;
             d3.selectAll('.unit').attr('d', function (d) {
-                curDataAttrs[d.id].size = currentFtrs.size;
                 return all_shapes[curDataAttrs[d.id].shapeId].size(currentFtrs.size)();
-            });
+            }).attr('fill', d => curDataAttrs[d.id].color);;
         }
     }
     if (useCustomIcons)
-        unitVisPadding = newSize*0.07; 
+        unitVisPadding = newSize * 0.07;
     updateVisualization();
     //deselectPoints();
 }
