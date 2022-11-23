@@ -1421,12 +1421,23 @@ function updateShapes(selection, shape, shapeId) {
         if (shapeId < numInitialShapes) {
             d3.select(`#unit-icon-${id}`).classed("selected", false);
             d3.select(`#unit-icon-${id}`).remove();
-            units.append('path')
-                .attr('d', shape.size(currentFtrs.size * 6)())
-                .attr('id', `unit-icon-${id}`)
-                .attr("class", "unit")
+//             units.append('path')
+//                 .attr('d', shape.size(currentFtrs.size * 6)())
+//                 .attr('id', `unit-icon-${id}`)
+//                 .attr("class", "unit")
+//                 .attr('fill', curDataAttrs[id].color)
+//                 .attr('transform', `${plotXY(dataPt)}`);
+            
+            d3.select(`#unit-icon-${id}`)
+                .attr('d', "disable")
+                .attr('fill', "disable")
+                .attr('transform', "disable");
+
+            d3.select(`#unit-icon-${id}`)
+                .attr('d', all_shapes[shapeId])
                 .attr('fill', curDataAttrs[id].color)
                 .attr('transform', `${plotXY(dataPt)}`);
+            
             curDataAttrs[id].shapeId = shapeId;
         } else {
             d3.select(`#unit-icon-${id}`).classed("selected", false);
