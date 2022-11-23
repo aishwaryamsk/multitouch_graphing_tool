@@ -41,7 +41,7 @@ let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 //let currentFtrs = { color: '#0067cd', shape: circleShape.size(200), imgSvgId: 0, size: 20 }; // attributes applied to all data points
-let currentFtrs = { color: '#0067cd', shapeId: 8, imgSvgId: 0, size: 20 }; // attributes applied to all data points
+let currentFtrs = { color: '#0067cd', shapeId: 5, imgSvgId: 0, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
 let shapeNum = 7;
@@ -106,7 +106,7 @@ Promise.all(array).then(function (data1) {
             .on('pointerdown', function (e, d) {
                 // console.log("att", e['target']['id']);
                 //findShape(e['target']['id']);
-                changeShape(e['target']['id']);
+                changeShape(e['target']['id'].slice(6));
             })
     }
 
@@ -124,8 +124,12 @@ Promise.all(array).then(function (data1) {
 
     lastShape.on('pointerdown', function (e, d) {
         // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
+        // // console.log(e['target'])
+        // console.log(e['explicitOriginalTarget'])
+        // console.log(d)
+        // console.log(e['explicitOriginalTarget']['parentElement']['id']);
         // console.log("e of selected shape is ", e['target']['parentElement']['id'])
-        changeShape(e['target']['parentElement']['id']);
+        changeShape(e['target']['parentElement']['id'].slice(6));
     })
 
     d3.select("#shapes body svg")
@@ -609,7 +613,7 @@ function importImgSVG(data) {
 
     lastShape.on('pointerdown', function (e, d) {
         // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
-        changeShape(e['target']['parentElement']['id']);
+        changeShape(e['target']['parentElement']['id'].slice(6));
     })
 
     d3.select("#shapes body svg")
