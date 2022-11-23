@@ -106,14 +106,17 @@ Promise.all(array).then(function (data1) {
             .on('pointerdown', function (e, d) {
                 // console.log("att", e['target']['id']);
                 //findShape(e['target']['id']);
-                changeShape(e['target']['id'].slice(6));
+                changeShape(e['target']['id']);
             })
     }
+
+    // console.log("imgSVG ", imgSVG, svgNode);
 
     lastShape = d3.select("#shapes")
         .append("xhtml:body")
         .attr("id", "shape-" + shapeNum)
-        .html(imgSVG['activeElement']['outerHTML'])
+        // .html(imgSVG['activeElement']['outerHTML'])
+        .html(svgNode.outerHTML)
         .style("display", "inline");
 
     d3.selectAll("#shape-" + shapeNum + " svg")
@@ -121,7 +124,8 @@ Promise.all(array).then(function (data1) {
 
     lastShape.on('pointerdown', function (e, d) {
         // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
-        changeShape(e['explicitOriginalTarget']['parentElement']['id']);
+        // console.log("e of selected shape is ", e['target']['parentElement']['id'])
+        changeShape(e['target']['parentElement']['id']);
     })
 
     d3.select("#shapes body svg")
@@ -266,7 +270,7 @@ function updateVisualization() {
         xScale = d3.scaleBand();
 
         // determine order of columns
-        if (attrSortOder === 0)
+        if (attrSortOder == 0)
             sortedAxisLabels.sort((a, b) => a.attrName.localeCompare(b.attrName));
         else sortedAxisLabels.sort((a, b) => b.attrName.localeCompare(a.attrName));
 
@@ -588,7 +592,7 @@ function importImgSVG(data) {
     d3.select(svgNode)
         .attr('height', 18)
         .attr('width', 18)
-        .style('fill', 'plum');
+        // .style('fill', 'plum');
     imgSVGs.push(svgNode);
 
     shapeNum += 1;
@@ -596,7 +600,8 @@ function importImgSVG(data) {
     lastShape = d3.select("#shapes")
         .append("xhtml:body")
         .attr("id", "shape-" + shapeNum)
-        .html(imgSVG['activeElement']['outerHTML'])
+        // .html(imgSVG['activeElement']['outerHTML'])
+        .html(svgNode.outerHTML)
         .style("display", "inline");
 
     d3.selectAll("#shape-" + shapeNum + " svg")
@@ -604,7 +609,7 @@ function importImgSVG(data) {
 
     lastShape.on('pointerdown', function (e, d) {
         // console.log("shape num is ", e['explicitOriginalTarget']['parentElement']['id']);
-        changeShape(e['explicitOriginalTarget']['parentElement']['id']);
+        changeShape(e['target']['parentElement']['id']);
     })
 
     d3.select("#shapes body svg")
@@ -1400,11 +1405,13 @@ function changeSize(newSize) {
 }
 
 function changeShape(shapeId) {
+
+    console.log("The selected shape is", shapeId.slice(6));
     currentFtrs.shape = shapeId;
 
     let isNewShapeCustomIcon = shapeId >= numInitialShapes;
     let shape = shapeId < numInitialShapes ? all_shapes[shapeId] : imgSVGs[shapeId - numInitialShapes];
-    console.log(isNewShapeCustomIcon);
+    // console.log(isNewShapeCustomIcon);
 
 
     if (selection.length !== 0 && selection.data().length !== 0) {
