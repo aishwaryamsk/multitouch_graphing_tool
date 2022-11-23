@@ -1355,7 +1355,7 @@ function changeSizeByCol(colname, min, max) {
 
 function changeColor(newColor) {
     // lasso selection can be [], or 0 selections as an object
-    if (selection.length !== 0 && selection.data().length !== 0) 
+    if (selection.length !== 0 && selection.data().length !== 0)
         updateColors(selection, newColor);
     // applied to all data points
     else updateColors(d3.selectAll('.unit'), newColor);
@@ -1377,37 +1377,20 @@ function updateColors(selection, newColor) {
 
 function changeSize(newSize) {
     // lasso selected points
-    if (selection.length !== 0 && selection.data().length !== 0) {
-        if (useCustomIcons) {
-            //if (useCustomIcons) unitVisHtMargin = newSize;
-            selection.data().forEach(d => {
-                curDataAttrs[d.id].size = newSize;
-            });
-            selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
-        } else {
-            //if (useCustomIcons) unitVisHtMargin = newSize * 6;
-            d3.selectAll(selection).attr('d', function (d) {
-                curDataAttrs[d.id].size = newSize;
-                return all_shapes[curDataAttrs[d.id].shapeId].size(newSize * 6)();
-            });
-        }
-    } // all data points
-    else {
-        if (useCustomIcons) {
-            //if (useCustomIcons) unitVisHtMargin = newSize;
-            d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
-        } else {
-            //if (useCustomIcons) unitVisHtMargin = newSize * 6;
-            currentFtrs.size = newSize;
-            d3.selectAll('.unit').attr('d', function (d) {
-                return all_shapes[curDataAttrs[d.id].shapeId].size(newSize * 6)();
-            }).attr('fill', d => curDataAttrs[d.id].color);
-        }
+    if (selection.length !== 0 && selection.data().length !== 0)
+        updateSize(selection, newSize);
+    // all points
+    else updateSize(d3.selectAll('.unit'), newSize);
+}
+
+function updateSize(selection, newSize) {
+    for (let elm of selection) {
+        let id = d3.select(elm).attr('id').split('-').at(-1);
+        if (!d3.select(`#unit-icon-${id}`).select('svg').empty())
+            d3.select(`#unit-icon-${id}`).select('svg').attr('height', newSize).attr('width', newSize);
+        else d3.select(`#unit-icon-${id}`).attr('d', all_shapes[curDataAttrs[id].shapeId].size(newSize * 6)());
+        curDataAttrs[id].size = newSize;
     }
-    // if (useCustomIcons)
-    //     unitVisPadding = newSize * 0.07;
-    //updateVisualization();
-    //deselectPoints();
 }
 
 function changeShape(shapeId) {
