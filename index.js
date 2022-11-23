@@ -38,7 +38,8 @@ let circleRadius = 7;
 let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
-let currentFtrs = { color: '#0067cd', shape: circleShape(), imgSvgId: 0, size: 20 }; // attributes applied to all data points
+//let currentFtrs = { color: '#0067cd', shape: circleShape.size(200), imgSvgId: 0, size: 20 }; // attributes applied to all data points
+let currentFtrs = { color: '#0067cd', shapeId: 2, imgSvgId: 0, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
 
@@ -52,9 +53,10 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = true;
+let useCustomIcons = false;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
+let unitVisPadding = 1.5;
 let imgSVGs = [];
 let attrSortOder = 0; // 0: ascending, 1: descending
 let currSize = 20;
@@ -98,7 +100,7 @@ Promise.all(array).then(function (data1) {
             .attr("transform", "translate(10, 10)")
             .on('pointerdown', function (e, d) {
                 // console.log("att", e['target']['id']);
-                changeShape(e['target']['id']);
+                findShape(e['target']['id']);
             })
     }
 
@@ -226,7 +228,7 @@ function updateVisualization() {
     } catch (err) {
         console.log(err);
     } */
-    let unitVisPadding = 1.5; //pixels
+    //unitVisPadding = 1.5; //pixels
     setNumericScale();
 
     //let unitSize = d3.max(Object.values(curDataAttrs), d => d.size);
@@ -262,7 +264,7 @@ function updateVisualization() {
     unitXScale.domain([0, numRowElements]);
 
     let maxAttributeValueCount = Math.max(...Object.values(attrValuesCount));
-    unitVisHtMargin = iconSize;
+    //unitVisHtMargin = iconSize;
 
     /* if (numRowElements > 1) {
         let yScaleHeight = 2 * circleRadius * (maxAttributeValueCount / numRowElements) * unitVisPadding;
@@ -317,13 +319,9 @@ function updateVisualization() {
         .attr("x", width / 2)
         .attr("y", margin.top + margin.bottom - 40)
         .attr("text-anchor", "middle")
-        .attr("font-size", "1.2em")
-    //.style("fill", 'dimgrey');
+        .attr("font-size", "1.2em");
 
-    /* // Enable Lasso selection for unit visualization -- for the svg and the units within it
-    lasso.targetArea(d3.select('#lasso-selectable-area'))
-        .items(d3.selectAll('#chart-content .unit'));
-    d3.select("#chart").call(lasso).call(chartZoom); */
+    lasso.items(d3.selectAll('#chart-content .unit'));
 }
 
 function updateImgSVG() {
@@ -337,8 +335,6 @@ function updateUnitViz(tx = 1, tk = 1) {
         .data(currentData, d => d.id);
     //.data(currentData);
 
-
-    console.log(currentData);
     if (useCustomIcons) {
         let svgs = units.join("g") //image
             .attr("class", "unit")
@@ -366,11 +362,9 @@ function updateUnitViz(tx = 1, tk = 1) {
             // create
             svgs.each(function (d) {
                 // clones whole subtree -- has to be cloned for each instance of the candy
-                console.log(curDataAttrs[d.id])
                 let s = imgSVGs[curDataAttrs[d.id].imgSvgId]
                 let id = d.id;
                 d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
-                console.log(d3.select(s));
                 this.append(s.cloneNode(true))
                 //.attr('id', id);
 
@@ -409,7 +403,7 @@ function updateUnitViz(tx = 1, tk = 1) {
     } else {
         units.join("path")
             .attr("class", "unit")
-            .attr('d', d => curDataAttrs[d.id].shape)
+            .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
             .style('fill', d => curDataAttrs[d.id].color)
             .attr('transform', d => plotXY(d, tx, tk));
 
@@ -558,7 +552,8 @@ function filterData(attr, lowValue, highValue) {
     for (let d of allData) {
         if (d.data[attr] >= lowValue && d.data[attr] <= highValue) {
             currentData.push(d);
-            curDataAttrs[d.id] = { color: currentFtrs.color, shape: currentFtrs.shape, imgSvgId: currentFtrs.imgSvgId, size: currentFtrs.size };
+            curDataAttrs[d.id] = { color: currentFtrs.color, shape: currentFtrs.shapeId, imgSvgId: currentFtrs.imgSvgId, size: currentFtrs.size };
+            console.log(curDataAttrs[d.id])
         }
     }
     d3.selectAll(".unit").remove();
@@ -620,7 +615,6 @@ function groupByAttribute(data, attribute) {
         };
     }
 
-    console.log(curDataAttrs)
     return data;
 }
 
@@ -632,7 +626,7 @@ function setData(d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
         //dataset.push({ id: i, data: dataPt });
         currentData.push({ id: i, data: dataPt });
-        curDataAttrs[i] = { color: '#0067cd', shape: circleShape(), imgSvgId: 0, size: 20 };
+        curDataAttrs[i] = { color: '#0067cd', shapeId: 2, imgSvgId: 0, size: 20 };
         i++;
     }
     return currentData;
@@ -720,9 +714,9 @@ function detectOnePointerDoubleTap() {
     // action to do on double tap
     if (onePointerTappedTwice && evCacheContent.length === 1 && !twoPointersTappedTwice) {
         // select all unit vis on single pointer double tap
-        selection = d3.selectAll('#chart-content .unit')
-            .classed("selected", true)
-            .attr('r', circleRadius); // reset radius of unselected points;
+        // selection = d3.selectAll('#chart-content .unit')
+        //     .classed("selected", true)
+        //     .attr('r', circleRadius); // reset radius of unselected points;
 
         //selection.classed("selected", true);
         // selection.notSelectedItems()
@@ -1045,7 +1039,6 @@ function tabulate(data, cols) {
     var head = table.append("thead")
     var body = table.append("tbody")
 
-    console.log("columns", cols);
     head.append("tr")
         .selectAll("th")
         .data(cols)
@@ -1269,6 +1262,7 @@ function changeSizeByCol(colname, min, max) {
 }
 
 function changeColor(newColor) {
+    //console.log(selection.data());
     // lasso selection can be [], or 0 selections as an object
     if (selection.length !== 0 && selection.data().length !== 0) {
         if (useCustomIcons) {
@@ -1277,40 +1271,79 @@ function changeColor(newColor) {
                 curDataAttrs[d.id].color = newColor;
             });
             selection.selectAll('svg').style('fill', newColor);
-        } else d3.selectAll(selection).style('fill', newColor);
-
+        } else {
+            d3.selectAll(selection).style('fill', newColor);
+        }
     } else {
         // applied to all data points
-        d3.selectAll('.unit svg').style('fill', newColor);
+        if (useCustomIcons)
+            d3.selectAll('.unit svg').style('fill', newColor);
+        else d3.selectAll('.unit').style('fill', newColor);
         currentFtrs.color = newColor;
     }
     d3.selectAll("#shapes svg path").style('fill', newColor);
-    deselectPoints();
+    //deselectPoints();
 }
 
 function changeSize(newSize) {
+    // lasso selected points
+    if (selection.length !== 0 && selection.data().length !== 0) {
+        if (useCustomIcons) {
+            unitVisHtMargin = newSize;
+            selection.data().forEach(d => {
+                curDataAttrs[d.id].size = newSize;
+            });
+            selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
+        } else {
+            unitVisHtMargin = newSize*6;
+            d3.selectAll(selection).attr('d', function (d) {
+                curDataAttrs[d.id].size = newSize*6;
+                return all_shapes[curDataAttrs[d.id].shapeId].size(newSize*6)();
+            });
+        }
+    } // all data points
+    else {
+        if (useCustomIcons) {
+            unitVisHtMargin = newSize;
+            d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
+        } else {
+            unitVisHtMargin = newSize*6;
+            currentFtrs.size = newSize * 6;
+            d3.selectAll('.unit').attr('d', function (d) {
+                curDataAttrs[d.id].size = currentFtrs.size;
+                return all_shapes[curDataAttrs[d.id].shapeId].size(currentFtrs.size)();
+            });
+        }
+    }
+    if (useCustomIcons)
+        unitVisPadding = newSize*0.07; 
+    updateVisualization();
+    //deselectPoints();
+}
+
+function changeShape() {
+    currentFtrs.shape = shape;
+    if (!useCustomIcons)
+        unitVisPadding = iconSize;
+    //shape
+    // lasso selection
     // if (selection.length !== 0 && selection.data().length !== 0) {
-    //     if (useCustomIcons) selection.selectAll('svg').attr('height', newSize).attr('width', newSize);
-    //     else {
-    //         d3.selectAll(selection).attr('height', newSize).attr('width', newSize);
-    //     }
-    // } else {
-    //     if (useCustomIcons)
-    //         d3.selectAll('.unit svg').attr('height', newSize).attr('width', newSize);
-    //     else {
-    //         for (let i = 0; i < currentData.length; i++) {
-    //             let name = "#unit-icon-" + i + " svg";
-    //             d3.select(name).attr('width', newSize).attr('height', newSize);
-    //         }
-    //     }
+    //     d3.selectAll(selection).attr('d', function(d) {
+    //         curDataAttrs[d.id].shape = shape;
+    //         return shape;
+    //     });
+    // } // all data points
+    // else {
+    //     d3.selectAll('.unit').attr('d', function(d) {
+    //         curDataAttrs[d.id].shape = shape;
+    //         return shape;
+    //     });
     // }
 
-    for (let i = 0; i < currentData.length; i++) {
-        let name = "#unit-icon-" + i + " svg";
-        d3.select(name).attr('width', newSize).attr('height', newSize);
-    }
-    currentFtrs.size = newSize;
-    deselectPoints();
+
+    //console.log(curDataAttrs[selection.data()[0].id].shape.size(200));
+    //console.log(curDataAttrs[d.id].shape.size(200));
+    //d3.selectAll(".unit path").attr('d', d => curDataAttrs[d.id].shape);
 }
 
 function changeXAxis(index) {
@@ -1335,25 +1368,20 @@ function visualize(colindex) {
     updateVisualization();
 }
 
-function changeShape(shape) {
-    console.log("shape", shape, shape.slice(6));
-    console.log(d3.select(".unit svg path"));
+function findShape(shape) {
+    // console.log("shape", shape, shape.slice(6));
+    // console.log(d3.select(".unit svg path"));
 
     // changing from user svg to d3 shape
     if (!d3.select(".unit svg path").empty()) {
         d3.selectAll(".unit svg path").remove();
-        d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null)
+        d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null);
         d3.selectAll(".unit svg")
             .attr("width", currSize).attr("height", currSize)
             .append("path").attr("d", all_shapes[shape.slice(6)])
             .attr("transform", "scale(8) translate(10, 10)");
     }
     // changing from d3 shape to user svg
-    else {
-
-        d3.selectAll(".unit path").remove();
-    }
-    currentFtrs.shape = shape;
 }
 
 function sortAxis(colName) {
