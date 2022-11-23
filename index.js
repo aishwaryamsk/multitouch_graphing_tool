@@ -41,7 +41,7 @@ let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 //let currentFtrs = { color: '#0067cd', shape: circleShape.size(200), imgSvgId: 0, size: 20 }; // attributes applied to all data points
-let currentFtrs = { color: '#0067cd', shapeId: 5, imgSvgId: 0, size: 20 }; // attributes applied to all data points
+let currentFtrs = { color: '#0067cd', shapeId: 2, imgSvgId: 0, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
 let shapeNum = 7;
@@ -56,7 +56,7 @@ let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
 // user preferences
-let useCustomIcons = true;
+let useCustomIcons = false;
 let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let unitVisPadding = 1.5;
@@ -352,11 +352,15 @@ function updateVisualization() {
         .attr("text-anchor", "middle")
         .attr("font-size", "1.2em");
 
-    lasso.items(d3.selectAll('#chart-content .unit'));
+    defineLassoSelection();
 }
 
 function updateImgSVG() {
     //imgSVG.style('stroke', 'pink').attr('fill', 'pink');
+}
+
+function defineLassoSelection() {
+    lasso.items(d3.selectAll('#chart-content .unit'));
 }
 
 function updateUnitViz(tx = 1, tk = 1) {
@@ -596,7 +600,7 @@ function importImgSVG(data) {
     d3.select(svgNode)
         .attr('height', 18)
         .attr('width', 18);
-        // .style('fill', 'plum');
+    // .style('fill', 'plum');
     imgSVGs.push(svgNode);
 
     shapeNum += 1;
@@ -1410,7 +1414,7 @@ function changeSize(newSize) {
 
 function changeShape(shapeId) {
 
-    console.log("The selected shape is", shapeId.slice(6));
+    //console.log("The selected shape is", shapeId.slice(6));
     currentFtrs.shape = shapeId;
 
     let isNewShapeCustomIcon = shapeId >= numInitialShapes;
@@ -1419,22 +1423,19 @@ function changeShape(shapeId) {
 
 
     if (selection.length !== 0 && selection.data().length !== 0) {
+        console.log(selection.data());
         selection.data().forEach(d => {
             let units = d3.selectAll('.unit-vis');
             let id = d.id;
-            console.log(d3.select(d));
-            console.log(d3.select(`#unit-icon-${d.id} svg`));
-            console.log(d3.select(`#unit-icon-${d.id} svg`).empty());
             // if path, remove path
             //d3.select(`#unit-icon-${d.id} svg`).empty()
             if (shapeId < numInitialShapes) {
-                console.log('append path')
                 d3.select(`#unit-icon-${d.id}`).remove();
                 units.append('path')
                     .attr('d', shape.size(currentFtrs.size * 6)())
                     .attr('id', `unit-icon-${id}`)
                     .attr('fill', curDataAttrs[d.id].color)
-                    .attr('transform', `${plotXY(d)} translate(10, 10)`);
+                    .attr('transform', `${plotXY(d)}`);
                 curDataAttrs[d.id].shapeId = shapeId;
             } else {
                 d3.select(`#unit-icon-${id}`).remove();
@@ -1443,19 +1444,23 @@ function changeShape(shapeId) {
                 let s = imgSVGs[shapeId - numInitialShapes];
 
                 d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
-                console.log(d3.select(s))
                 let g = units.append('g')
                     .attr("class", "unit")
                     .attr("data-toggle", "tooltip")
                     .attr("data-placement", "top")
                     .attr("title", d['data']['Candy'])
                     .attr("id", `unit-icon-${d.id}`)
-                    .attr('transform', plotXY(d));
+                    .attr('transform', `${plotXY(d)} translate(-5, -10)`);
 
                 g.node().append(s.cloneNode(true));
                 curDataAttrs[d.id].shapeId = shapeId;
+
+                d3.selectAll(".unit svg rect")
+                    .attr("fill", "none");
             }
         });
+        lasso.items(d3.selectAll('#chart-content .unit'));
+        //defineLassoSelection();
     }
 
 }
@@ -1893,8 +1898,8 @@ onlongtouch = function () {
 // }
 
 document.addEventListener("DOMContentLoaded", function () {
-    document.querySelector("#chart").addEventListener("touchstart", touchStart);
-    document.querySelector("#chart").addEventListener("touchend", touchEnd);
+    document.querySelector("#x-axis-label").addEventListener("touchstart", touchStart);
+    document.querySelector("#x-axis-label").addEventListener("touchend", touchEnd);
 
     //   document.querySelector("path").addEventListener("touchstart", touchStartTip);
     //   document.querySelector("path").addEventListener("touchend", touchEndTip);
