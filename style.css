@@ -141,13 +141,13 @@ html, body{
     fill-opacity: .5;
 }
 
-.not_possible {
+/* .not_possible {
     fill: rgb(200, 200, 200);
 }
 
 .possible {
     fill: #EC888C;
-}
+} */
 
 .selected {
     stroke: black;
