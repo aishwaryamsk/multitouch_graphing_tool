@@ -1698,7 +1698,7 @@ function updateSelection() {
         // console.log("quant", quant);
 
         d3.select("#selection-text")
-            .html("<br>" + data.length + " data points are selected.<br><hr><br>The selected candies are: <br>" + candynames + "</i><br><hr><br>The aggregate stats of selected points based on \"" + attribute + "\" is: " + quant + "</i>");
+            .html("<br>" + data.length + " data points are selected.<br><hr><br>The selected candies are: <br>" + candynames + "</i><br><hr><br>Aggregate stats of selected points based on \"" + attribute + "\" is: " + quant + "</i>");
 
     } else if (data.length == 0) {
 
