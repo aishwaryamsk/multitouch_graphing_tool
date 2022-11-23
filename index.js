@@ -380,14 +380,14 @@ function updateUnitViz(tx = 1, tk = 1) {
     // console.log(customSvgData);
     // console.log(shapeData);
     let units = d3.selectAll("#chart-content .unit-vis")
-        .selectAll('path.unit')
+        .selectAll('.unit')
         .data(currentData, d => d.id);
 
     if (useCustomIcons) {
         //if (customSvgData.length !== 0) {
-        let units = d3.selectAll("#chart-content .unit-vis")
-            .selectAll('g.unit')
-            .data(currentData, d => d.id);
+        // let units = d3.selectAll("#chart-content .unit-vis")
+        //     .selectAll('.unit')
+        //     .data(currentData, d => d.id);
 
         let svgs = units.join("g") //image
             .attr("class", "unit")
@@ -460,15 +460,16 @@ function updateUnitViz(tx = 1, tk = 1) {
     else {
 
 
-        if (d3.select('path.unit').empty()) {
-            units.enter()
-                .append("path")
+        //if (d3.select('.unit').empty()) {
+            // units.enter()
+            //     .append("path")
+            units.join("path")
                 .attr("class", "unit")
                 .attr("id", (d, i) => `unit-icon-${d.id}`)
                 .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
                 .style('fill', d => curDataAttrs[d.id].color)
                 .attr('transform', d => plotXY(d, tx, tk));
-        }
+        //}
 
         // units.join("g")
         //     .attr("class", "unit")
