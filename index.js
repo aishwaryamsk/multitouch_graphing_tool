@@ -208,7 +208,12 @@ Promise.all(array).then(function (data1) {
     d3.select("#selection")
         .append("xhtml:body")
         .attr("id", "selection-text")
-        .html("<br>Lasso-select datapoints to view stats.<br>")
+        .html("<br>Lasso-select datapoints to view stats.<br>");
+    
+    d3.select("#pill-details-tab")
+        .on('pointerdown', function(e, d){
+            changeTab();
+        });    
 });
 
 function createVisualization() {
