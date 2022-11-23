@@ -1009,6 +1009,7 @@ let lasso = d3.lasso()
     .on("draw", lassoDraw)
     .on("end", function () {
         lassoEnd();
+        updateSelection();
         //console.log('selectedItems', lasso.selectedItems());
     });
 
@@ -1575,14 +1576,13 @@ function filterAxis(colName) {
         },
     });
 }
-
 function updateSelection() {
     // console.log("Selected!");
 
     let data = d3.selectAll(".selected").data();
     // console.log("selection data", data);
 
-    if (data.length != 0) {
+    if (data.length > 1) {
 
         let candynames = "<i>";
         for (let i = 0; i < data.length; i++) {
@@ -1630,7 +1630,7 @@ function updateSelection() {
         d3.select("#selection-text")
             .html("<br>" + data.length + " data points are selected.<br><hr><br>The selected candies are: <br>" + candynames + "</i><br><hr><br>The aggregate stats of selected points based on \"" + attribute + "\" is: " + quant + "</i>");
 
-    } else {
+    } else if (data.length == 0){
 
         d3.select("#selection")
             .selectAll("body")
@@ -1641,8 +1641,35 @@ function updateSelection() {
             .attr("id", "selection-text")
             .html("<br>No points are selected.<br>")
 
-    }
+    } else {
+        // console.log("1 item selected: ", data);
+        let selPt = "";
 
+        selPt += "The selected item is the \"";
+        selPt += data[0]['data']['Candy'];
+        selPt += "\".<br><br>Its attributes are:<ul class=\"list-group\">";
+
+        // console.log("length", data[0]['data'].length);
+
+        let objData = data[0]['data'];
+        let listDim = Object.keys(objData);
+
+        for(let i=0; i < listDim.length; i++){
+            // console.log(listDim[i], objData[listDim[i]]);
+            selPt += "<li class=\"list-group-item\">";
+            selPt += listDim[i];
+            selPt += ": ";
+            selPt += objData[listDim[i]];
+            selPt += "</li>"
+        }
+
+        selPt += "</ul>"
+
+        // console.log(selPt)
+
+        d3.select("#selection-text")
+            .html(selPt)
+    }
 }
 
 function changeTab() {
