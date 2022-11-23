@@ -364,6 +364,74 @@ function defineLassoSelection() {
     lasso.items(d3.selectAll('#chart-content .unit'));
 }
 
+function updateUnitViz2(tx = 1, tk = 1) {
+    let shapeData = [];
+    let customSvgData = [];
+
+    for (let dataPt of currentData) {
+        console.log(dataPt)
+        console.log(dataset)
+        if (curDataAttrs[dataPt.id].shapeId >= numInitialShapes)
+            customSvgData.push(dataPt);
+        else shapeData.push(dataPt);
+    }
+    console.log(shapeData)
+    console.log(customSvgData)
+
+    if (customSvgData.length !== 0)
+        d3.selectAll("#chart-content .unit-vis")
+            .selectAll('g.unit')
+            .data(customSvgData, function (d) {
+                return d.id
+            }).join("g") //image
+            .attr("class", "unit")
+            .attr("data-toggle", "tooltip")
+            .attr("data-placement", "top")
+            .attr("title", (d, i) => d['data']['Candy'])
+            .attr("id", (d, i) => `unit-icon-${d.id}`)
+            .attr('transform', d => plotXY(d, tx, tk));
+
+    if (shapeData.length !== 0) {
+        let data = d3.selectAll("#chart-content .unit-vis")
+            .selectAll('.unit')
+            .data(shapeData, function (d) {
+                if (d) {
+                    return d.id
+                } else {
+                    console.log(d)
+                }
+            });
+
+
+        let newPaths = data.enter()
+            .append("path");
+
+        newPaths.merge(data)
+            .attr("class", "unit")
+            .attr("id", (d, i) => `unit-icon-${d.id}`)
+            .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
+            .style('fill', d => curDataAttrs[d.id].color)
+            .attr('transform', d => plotXY(d, tx, tk));
+    }
+
+
+    // d3.selectAll("#chart-content .unit-vis")
+    //     .selectAll('path.unit')
+    //     .data(shapeData, function (d) {
+    //         if (d) {
+
+    //             return d.id
+    //         } else {
+    //             console.log(d)
+    //         }
+    //     }).join("path")
+    //     .attr("class", "unit")
+    //     .attr("id", (d, i) => `unit-icon-${d.id}`)
+    //     .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
+    //     .style('fill', d => curDataAttrs[d.id].color)
+    //     .attr('transform', d => plotXY(d, tx, tk));
+}
+
 function updateUnitViz(tx = 1, tk = 1) {
 
 
@@ -382,7 +450,10 @@ function updateUnitViz(tx = 1, tk = 1) {
     // console.log(shapeData);
     let units = d3.selectAll("#chart-content .unit-vis")
         .selectAll('.unit')
-        .data(currentData, d => d.id);
+        .data(currentData, function (d) {
+            return d.id
+        });
+
 
     if (useCustomIcons) {
         //if (customSvgData.length !== 0) {
@@ -570,7 +641,7 @@ function plotXY(d, tx = 1, tk = 1) {
         let order = curDataAttrs[d.id]['groupBy'].order;
         if (!isNumericScale) {
             // update the range of x-scale for unit vis to the x value of the column
-            bandwidth = xScale.bandwidth();
+            bandwidth = xScale.bandwidth() * 2;
             unitXScale.range([xScale(String(d.data[attribute])),
             xScale(String(d.data[attribute])) + bandwidth]);
             x = unitXScale((order - 1) % numRowElements);
@@ -645,9 +716,13 @@ function filterData(attr, lowValue, highValue) {
 }
 
 function updateXAttribute(attr) {
+    
     attribute = attr;
+    d3.selectAll(".unit").remove();
     groupByAttribute(currentData, attribute);
+    //createVisualization();
     updateVisualization();
+    //updateUnitViz2();
 }
 
 function clearData() {
@@ -1404,6 +1479,7 @@ function changeShape(shapeId) {
     if (selection.length !== 0 && selection.data().length !== 0)
         updateShapes(selection, shape, shapeId);
     else updateShapes(d3.selectAll('.unit'), shape, shapeId);
+    d3.selectAll(".unit svg rect").attr("fill", "none");
     defineLassoSelection();
 
 }
@@ -1420,7 +1496,7 @@ function updateShapes(selection, shape, shapeId) {
         };
         let units = d3.selectAll('.unit-vis');
         if (shapeId < numInitialShapes) {
-            d3.select(`#unit-icon-${id}`).classed("selected", false);
+            //d3.select(`#unit-icon-${id}`).classed("selected", false);
             d3.select(`#unit-icon-${id}`).remove();
             units.append('path')
                 .attr('d', shape.size(currentFtrs.size * 6)())
@@ -1441,7 +1517,7 @@ function updateShapes(selection, shape, shapeId) {
             
             curDataAttrs[id].shapeId = shapeId;
         } else {
-            d3.select(`#unit-icon-${id}`).classed("selected", false);
+            //d3.select(`#unit-icon-${id}`).classed("selected", false);
             d3.select(`#unit-icon-${id}`).remove();
 
             let s = imgSVGs[shapeId - numInitialShapes];
@@ -1456,11 +1532,8 @@ function updateShapes(selection, shape, shapeId) {
                 .attr("id", `unit-icon-${id}`)
                 .attr('transform', `${plotXY(dataPt)} translate(-10, -10)`);
             g.node().append(s.cloneNode(true));
-            curDataAttrs[id].shapeId = shapeId;
-
-            d3.selectAll(".unit svg rect")
-                .attr("fill", "none");
         }
+        curDataAttrs[id].shapeId = shapeId;
     }
 }
 
@@ -1487,7 +1560,7 @@ function changeXAxis(index) {
 function visualize(colindex) {
     attribute = columns[colindex];
     //currentData = groupByAttribute(dataset, attribute);
-    currentData = groupByAttribute(dataset, attribute);
+    groupByAttribute(dataset, attribute);
     createVisualization();
     updateVisualization();
 }
@@ -1627,7 +1700,7 @@ function updateSelection() {
         d3.select("#selection-text")
             .html("<br>" + data.length + " data points are selected.<br><hr><br>The selected candies are: <br>" + candynames + "</i><br><hr><br>The aggregate stats of selected points based on \"" + attribute + "\" is: " + quant + "</i>");
 
-    } else if (data.length == 0){
+    } else if (data.length == 0) {
 
         d3.select("#selection")
             .selectAll("body")
@@ -1651,7 +1724,7 @@ function updateSelection() {
         let objData = data[0]['data'];
         let listDim = Object.keys(objData);
 
-        for(let i=0; i < listDim.length; i++){
+        for (let i = 0; i < listDim.length; i++) {
             // console.log(listDim[i], objData[listDim[i]]);
             selPt += "<li class=\"list-group-item\">";
             selPt += listDim[i];
