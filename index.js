@@ -1011,6 +1011,7 @@ let lasso = d3.lasso()
     .on("end", function () {
         lassoEnd();
         updateSelection();
+        changeTab();
         //console.log('selectedItems', lasso.selectedItems());
     });
 
