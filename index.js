@@ -18,7 +18,10 @@ let newColor = "#0067cd";
 let tip;
 
 let cols_lower, cols;
-let all_shapes = [squareShape, triangleShape, circleShape, crossShape, diamondShape, starShape, wyeShape]
+let all_shapes = [squareShape, triangleShape, circleShape, crossShape, diamondShape, starShape, wyeShape];
+
+// actions for which undo/redo is defined
+let undoActionsList = ['changeColor', 'changeShape', 'changeSize', 'filterData', 'default'];
 
 /* list of {data: {…}, attrs: {…}} 
 * store attributes (such as color, shape, atrribute that it's grouped with etc) for each data point
@@ -34,6 +37,10 @@ let currentData = [];
 let allData = []; // holds all attributes
 let curDataAttrs = {};
 
+// Undo/Redo
+let undoStack = [];
+let redoStack = [];
+
 // settings
 let duration = 1;
 let circleRadius = 7;
@@ -41,7 +48,6 @@ let unitRadius = 7;
 let attrValuesCount; // keeps count of values in the grouped attribute
 let sortedAxisLabels; // keeps sorted order of atrributes on x axis
 const defSizeRatio = 9;
-let currentFtrs = { color: '#0067cd', shapeId: 2, imgSvgId: null, size: 20 }; // attributes applied to all data points
 // selections
 let selection = []; // all selected unit vis
 let shapeNum = 7;
@@ -193,6 +199,14 @@ Promise.all(array).then(function (data1) {
         .attr("id", "selection-text")
         .html("<br>Lasso-select datapoints to view stats.<br>");
 
+    // add state to undo stack
+    undoStack.push({
+        action: 'default',
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding
+    });
 });
 
 function createVisualization() {
@@ -330,130 +344,6 @@ function defineLassoSelection() {
     lasso.items(d3.selectAll('#chart-content .unit'));
 }
 
-// function updateUnitViz2(tx = 1, tk = 1, shapesData = [], SVGsData = [], shapeId) {
-//     console.log(tx, tk, shapesData, SVGsData)
-//     if (shapesData.length == 0 && SVGsData.length == 0) {
-//         console.log('here')
-//         for (let dataPt of currentData) {
-//             // console.log(dataPt)
-//             // console.log(dataset)
-//             if (curDataAttrs[dataPt.id].shapeId >= numInitialShapes)
-//                 SVGsData.push(dataPt);
-//             else shapesData.push(dataPt);
-//         }
-//         console.log(shapesData)
-//         console.log(SVGsData)
-//     }
-//     if (shapesData.length !== 0) {
-
-//         d3.selectAll("#chart-content .unit-vis")
-//             .selectAll('path.unit')
-//             .data(shapesData, function (d) {
-//                 if (d) {
-//                     return d.id
-//                 } else {
-//                     console.log(d)
-//                 }
-//             }).join("path")
-//             .attr("class", "unit")
-//             .attr("id", (d, i) => `unit-icon-${d.id}`)
-//             .attr("d", d => all_shapes[curDataAttrs[d.id].shapeId]())
-//             .style('fill', d => curDataAttrs[d.id].color)
-//             .attr('transform', d => plotXY(d, tx, tk));
-
-//         // let data = d3.selectAll("#chart-content .unit-vis")
-//         //     .selectAll('path.unit')
-//         //     .data(shapesData, function (d) {
-//         //         if (d) {
-//         //             return d.id
-//         //         } else {
-//         //             console.log(d)
-//         //         }
-//         //     });
-
-
-//         // let newPaths = data.enter()
-//         //     .append("path");
-
-//         // newPaths.merge(data)
-//         //     .attr("class", "unit")
-//         //     .attr("id", (d, i) => `unit-icon-${d.id}`)
-//         //     .attr("data-toggle", "tooltip")
-//         //     .attr("data-placement", "top")
-//         //     .attr("title", (d, i) => d['data']['Candy'])
-//         //     .attr('d', d => all_shapes[curDataAttrs[d.id].shapeId]())
-//         //     .style('fill', d => curDataAttrs[d.id].color)
-//         //     .attr('transform', d => plotXY(d, tx, tk));
-
-//     }
-
-//     if (SVGsData.length !== 0) {
-//         // d3.selectAll("#chart-content .unit-vis")
-//         //     .selectAll('g.unit')
-//         //     .data(SVGsData, function (d) {
-//         //         return d.id
-//         //     }).join("g") //image
-//         //     .attr("class", "unit")
-//         //     .attr("id", (d, i) => `unit-icon-${d.id}`)
-//         //     .attr("data-toggle", "tooltip")
-//         //     .attr("data-placement", "top")
-//         //     .attr("title", (d, i) => d['data']['Candy'])
-//         //     .attr('transform', d => plotXY(d, tx, tk));
-
-//         // clones whole subtree -- has to be cloned for each instance of the candy
-//         // let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
-//         // let id = d.id;
-//         // d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
-//         // this.append(s.cloneNode(true))
-
-//         // d3.selectAll("g.unit svg").remove();
-
-//         let svgGs = d3.selectAll("#chart-content .unit-vis")
-//             .selectAll('g.unit')
-//             .data(SVGsData, function (d) {
-//                 return d.id
-//             });
-
-//         let newGs = svgGs.enter()
-//             .append('g') //image
-//             .attr("class", "unit")
-//             .attr("id", (d, i) => `unit-icon-${d.id}`)
-//             .attr("data-toggle", "tooltip")
-//             .attr("data-placement", "top")
-//             .attr("title", (d, i) => d['data']['Candy'])
-//         //.append(s.cloneNode(true))
-//         //append svg
-
-//         // create new svgs
-//         let s = imgSVGs[shapeId - numInitialShapes];
-//         console.log(shapeId)
-//         console.log(s)
-//         newGs.each(function (d) {
-//             // clones whole subtree -- has to be cloned for each instance of the candy
-//             //let s = imgSVGs[curDataAttrs[d.id].imgSvgId];
-//             console.log(this)
-//             console.log(d)updateUnitViz
-
-//             let id = d.id;
-//             d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
-//             this.append(s.cloneNode(true));
-//         });
-//         console.log('svgGs', d3.selectAll(svgGs));
-
-
-
-//         newGs.merge(svgGs)
-//             .attr('transform', d => plotXY(d, tx, tk));
-
-
-//         svgGs.exit().remove();
-
-
-//     }
-
-
-// }
-
 function updateUnitViz(tx = 1, tk = 1, shapesData = [], SVGsData = []) {
 
     if (shapesData.length == 0 && SVGsData.length == 0) {
@@ -515,6 +405,7 @@ function updateUnitViz(tx = 1, tk = 1, shapesData = [], SVGsData = []) {
         }
     }
     d3.selectAll(".unit svg rect").attr("fill", "none");
+    defineLassoSelection();
 }
 
 function plotXY(d, tx = 1, tk = 1) {
@@ -536,6 +427,10 @@ function plotXY(d, tx = 1, tk = 1) {
 }
 
 /* Helper functions */
+
+function cloneObj(obj) {
+    return JSON.parse(JSON.stringify(obj))
+}
 
 /* Read SVG */
 function readFile(e) {
@@ -591,6 +486,13 @@ function filterData(attr, lowValue, highValue) {
     //d3.selectAll(".unit").remove();
     groupByAttribute(currentData, attribute);
     updateVisualization();
+    undoStack.push({
+        action: 'filterData',
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding
+    });
 }
 
 function updateXAttribute(attr) {
@@ -662,7 +564,7 @@ function setData(d) {
         //dataset.push({ id: i, data: dataPt, attrs: { color: '#0067cd', shape: circleShape(), imgSvgId: 0 } });
         //dataset.push({ id: i, data: dataPt });
         currentData.push({ id: i, data: dataPt });
-        curDataAttrs[i] = { color: currentFtrs.color, shapeId: currentFtrs.shapeId, imgSvgId: null, size: currentFtrs.size };
+        curDataAttrs[i] = { color: '#0067cd', shapeId: 2, size: 20 };
         i++;
     }
     return currentData;
@@ -703,6 +605,8 @@ function setHandlers(name) {
     //el.onpointerout = pointerupHandler; // moving to descendent (unit circles) triggers pointerout 
     el.onpointerleave = pointerupHandler;
 
+    el.onpointermove = twoFingerSwipe;
+
     // move handlers for different targets
     /* if (name === 'lasso-selectable-area')
         el.onpointermove = pinchZoomXY;
@@ -726,6 +630,8 @@ function pointerdownHandler(ev) {
     //updateBackground(ev);
     // check if this is a double tap
     doubleTapHandler(ev);
+    // swipe left/right handler
+    startTwoFingerSwipe(ev);
 }
 
 function doubleTapHandler(ev) {
@@ -853,6 +759,50 @@ function setNumericScale() {
         isNumericScale = true;
     else isNumericScale = false;
 }
+
+var prevPotrLoc = undefined; // pointer 0
+function startTwoFingerSwipe(ev) {
+    if (evCacheContent.length === 2 && prevPotrLoc === undefined) {
+        const evCache = getCache(ev);
+        const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+        evCache[index] = ev;
+        prevPotrLoc = [{ x: evCache[0].clientX, y: evCache[0].clientY }, { x: evCache[1].clientX, y: evCache[1].clientY }];
+    } else twoFingerSwipe();
+}
+
+function twoFingerSwipe(ev) {
+    const evCache = getCache(ev);
+    if (ev !== undefined && evCache && evCache.length === 2) {
+        const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+        evCache[index] = ev;
+
+        // If two pointers are down and the distance between each pointer move is positive/negative along an axis, determine swipe direction
+        // Calculate the distance between the previous pointer location and current
+        if (prevPotrLoc === undefined) {
+            return;
+        }
+        var x = ev.clientX;
+        var y = ev.clientY;
+        console.log(prevPotrLoc)
+        var xDiff = prevPotrLoc[index].x - x;
+        var yDiff = prevPotrLoc[index].y - y;
+
+        if (Math.abs(xDiff) > Math.abs(yDiff)) {
+            if (xDiff > 0) {
+                /* right swipe: undo */
+                console.log('swipe left')
+                redoAction();
+            } else if (xDiff < 0) {
+                /* left swipe: redo */
+                console.log('swipe right');
+                undoAction();
+            }
+        }
+        /* reset values */
+        prevPotrLoc = undefined;
+    }
+}
+
 /*
 function pinchZoom(ev, direction) {
     // This function implements a 2-pointer horizontal pinch/zoom gesture.
@@ -915,9 +865,11 @@ function pointerupHandler(ev) {
 function getCache(ev) {
     // Return the cache for this event's target element
     //console.log($('#x-axis-content').has(ev.target).length);
-    if ($('#evCacheXAxis').has(ev.target).length)
-        return evCacheXAxis;
-    else return evCacheContent;
+    //if ($('#evCacheXAxis').has(ev.target).length)
+    // if ($('#evCacheXAxis').has(ev.target).length)
+    //     return evCacheXAxis;
+    // else return evCacheContent;
+    return evCacheContent;
 }
 
 function pushEvent(ev) {
@@ -1001,57 +953,6 @@ function lassoEnd() {
         .classed("selected", false)
     //.attr('r', circleRadius); // reset radius of unselected points
 
-    // color
-    // selection.data().forEach(d => {
-    //     curDataAttrs[d.id].color = 'pink';
-    // });
-    // updateVisualization();
-
-    // // shape
-    // selection.data().forEach(d => {
-    //     curDataAttrs[d.id].shape = squareShape();
-    // });
-    // updateVisualization();
-
-    // size
-    // selection.data().forEach(d => {
-    //     curDataAttrs[d.id].size = 300;
-    // });
-    // updateVisualization();
-
-    // svg icon
-    // console.log(imgSVGs)
-    //useCustomIcons = true;
-    //d3.selectAll('.unit svg').style('fill', 'pink')
-    //d3.select(s).style('fill', curDataAttrs[id].color);
-
-
-    // console.log();
-    // let svg = imgSVGs[curDataAttrs[selection.data()[0].id].imgSvgId];
-    // d3.select(svg)
-    //     .attr('height', 18)
-    //     .attr('width', 18)
-    //     .style('fill', 'plum');
-    // change color
-    /* selection.data().forEach(d => {
-        let id = d.id;
-        curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-        curDataAttrs[d.id].color = 'pink';
-        d3.select(`.unit #unit-${id}`).style('fill', curDataAttrs[id].color);
-    });
-
-    // change size
-    selection.data().forEach(d => {
-        let id = d.id;
-        curDataAttrs[d.id].imgSvgId = 0; // pass in the newly added svg here -- store svgs?
-        curDataAttrs[d.id].color = 'pink';
-        d3.select(`.unit #unit-${id}`)
-        .attr('height', 30)
-        .attr('width', 30);
-    });
-    //iconSize = 3*iconSize;
-    //circleRadius = 2*circleRadius;
-    updateVisualization(); */
     updateSelection();
 
 };
@@ -1059,11 +960,94 @@ function lassoEnd() {
 function deselectPoints() {
     lasso.selectedItems()
         .classed("selected", false);
-    //lasso.notSelectedItems()
-    //.attr('r', circleRadius); // reset radius of unselected points
 }
 
+function undoAction() {
+    if (undoStack.length > 1) {
+        console.log('undoStack', undoStack)
+        let curAction = undoStack.pop();
+        redoStack.push(curAction);
 
+        //let prevAction = undoStack.pop();
+        // current displayed state is the last item on undo stack
+        let prevAction = undoStack.at(-1);
+        //undoStack.push({action: 'default', currentData: [...currentData], curDataAttrs: {...curDataAttrs}});
+        //undoStack.push({action: 'changeColor', function: changeColor, attrs: {newColor: newColor}, currentData: currentData, curDataAttrs: curDataAttrs});
+        if (['changeColor', 'changeShape', 'changeSize', 'filterData', 'default'].includes(prevAction.action)) {
+            currentData = cloneObj(prevAction.currentData);
+            curDataAttrs = cloneObj(prevAction.curDataAttrs);
+            unitVisHtMargin = prevAction.unitVisHtMargin;
+            unitVisPadding = prevAction.unitVisPadding;
+            updateVisualization();
+        }
+        // switch (prevAction.action) {
+        //     case 'changeColor':
+        //     case 'changeShape':
+        //         currentData = cloneObj(prevAction.currentData);
+        //         curDataAttrs = cloneObj(prevAction.curDataAttrs);
+        //         updateUnitViz();
+        //         break;
+        //     case 'changeSize':
+        //         currentData = cloneObj(prevAction.currentData);
+        //         curDataAttrs = cloneObj(prevAction.curDataAttrs);
+        //         unitVisHtMargin = prevAction.unitVisHtMargin;
+        //         unitVisPadding = prevAction.unitVisPadding;
+        //         updateVisualization();
+        //         break;
+        //     case 'filterData':
+        //         currentData = cloneObj(prevAction.currentData);
+        //         curDataAttrs = cloneObj(prevAction.curDataAttrs);
+        //         updateUnitViz();
+        //         break;
+        //     default:
+        //         // default state (first state of app)
+        //         currentData = cloneObj(prevAction.currentData);
+        //         curDataAttrs = cloneObj(prevAction.curDataAttrs);
+        //         updateVisualization();
+        // }
+    }
+}
+
+function redoAction() {
+    if (redoStack.length >= 1) {
+        console.log('redoStack', redoStack)
+        let curAction = redoStack.pop();
+        undoStack.push(curAction);
+        if (['changeColor', 'changeShape', 'changeSize', 'filterData', 'default'].includes(curAction.action)) {
+            currentData = cloneObj(curAction.currentData);
+            curDataAttrs = cloneObj(curAction.curDataAttrs);
+            unitVisHtMargin = curAction.unitVisHtMargin;
+            unitVisPadding = curAction.unitVisPadding;
+            updateVisualization();
+        }
+        // switch (curAction.action) {
+        //     case 'changeColor':
+        //         currentData = cloneObj(curAction.currentData);
+        //         curDataAttrs = cloneObj(curAction.curDataAttrs);
+        //         updateUnitViz();
+        //         break;
+        //     case 'changeShape':
+        //         currentData = cloneObj(curAction.currentData);
+        //         curDataAttrs = cloneObj(curAction.curDataAttrs);
+        //         updateUnitViz();
+        //         break;
+        //     case 'changeSize':
+        //         currentData = cloneObj(curAction.currentData);
+        //         curDataAttrs = cloneObj(curAction.curDataAttrs);
+        //         updateUnitViz();
+        //     case 'filterData':
+        //         currentData = cloneObj(curAction.currentData);
+        //         curDataAttrs = cloneObj(curAction.curDataAttrs);
+        //         updateUnitViz();
+        //         break;
+        //     default:
+        //         // default state (first state of app)
+        //         currentData = cloneObj(curAction.currentData);
+        //         curDataAttrs = cloneObj(curAction.curDataAttrs);
+        //         updateVisualization();
+        // }
+    }
+}
 
 
 /* Niveditha */
@@ -1310,7 +1294,15 @@ function changeColor(newColor) {
     // applied to all data points
     else updateColors(d3.selectAll('.unit'), newColor);
     d3.selectAll("#shapes svg path").style('fill', newColor);
-    //deselectPoints();
+
+    // add action to undoStack
+    undoStack.push({
+        action: 'changeColor',
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding
+    });
 }
 
 function updateColors(selection, newColor) {
@@ -1331,11 +1323,18 @@ function changeSize(newSize) {
     // all points
     else {
         updateSize(d3.selectAll('.unit'), newSize);
-        console.log(newSize / 15);
         unitVisHtMargin = newSize;
         unitVisPadding = newSize / 15;
         updateVisualization();
     }
+    // store action in undo stack
+    undoStack.push({
+        action: 'changeSize',
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding
+    });
 }
 
 function updateSize(selection, newSize) {
@@ -1350,7 +1349,6 @@ function updateSize(selection, newSize) {
 }
 
 function changeShape(shapeId) {
-    currentFtrs.shape = parseInt(shapeId);
     shapeId = parseInt(shapeId);
 
     let shapesData = [];
@@ -1463,7 +1461,14 @@ function changeShape(shapeId) {
     }
     // restore zoomed state
     if (zoomState !== undefined) zoomed(zoomState);
-    defineLassoSelection();
+
+    undoStack.push({
+        action: 'changeShape',
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding
+    });
 }
 
 function updateShapes2(selection, shape, shapeId) {
