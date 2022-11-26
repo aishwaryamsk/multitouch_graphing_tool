@@ -261,11 +261,14 @@ function updateVisualization() {
         let minMax = d3.extent(currentData, function (d) {
             return d.data[attribute];
         });
-        xScale.domain(minMax).range([0, width]); // takes number as input
+        // sort
+        if (attrSortOder == 0)
+            xScale.domain(minMax).range([0, width]); // takes number as input
+        else xScale.domain(minMax.reverse()).range([0, width]);
     } else { // categorical scale (yes/no)
         xScale = d3.scaleBand();
 
-        // determine order of columns
+        // sort: determine order of columns
         if (attrSortOder == 0)
             sortedAxisLabels.sort((a, b) => a.attrName.localeCompare(b.attrName));
         else sortedAxisLabels.sort((a, b) => b.attrName.localeCompare(a.attrName));
@@ -1057,15 +1060,14 @@ function createDropDown(data, cols) {
         .on('pointerdown', function (e, d) {
 
             let index = columns.indexOf(d);
-            console.log("att", d, index);
             attribute = d;
             changeXAxis(index);
 
-            if (d == "Candy" || Object.keys(attrValuesCount).length === 2) {
+            /* if (d == "Candy" || Object.keys(attrValuesCount).length === 2) {
                 d3.selectAll(".form-check").style("display", "block");
             } else {
                 d3.selectAll(".form-check").style("display", "none");
-            }
+            } */
 
         });
 
@@ -1306,7 +1308,7 @@ function changeShape(shapeId) {
             }
         }
 
-        
+
 
         // changing to shape
         if (shapeId < numInitialShapes) {
@@ -1513,15 +1515,7 @@ function changeXAxis(index) {
     if (zoomState !== undefined) zoomed(zoomState.x, zoomState.k);
 }
 
-function visualize(colindex) {
-    attribute = columns[colindex];
-    //currentData = groupByAttribute(dataset, attribute);
-    groupByAttribute(dataset, attribute);
-    createVisualization();
-    updateVisualization();
-}
-
-function findShape(shape) {
+/* function findShape(shape) {
     // console.log("shape", shape, shape.slice(6));
     // console.log(d3.select(".unit svg path"));
 
@@ -1535,7 +1529,7 @@ function findShape(shape) {
             .attr("transform", "scale(8) translate(10, 10)");
     }
     // changing from d3 shape to user svg
-}
+} */
 
 function sortAxis(colName) {
 
