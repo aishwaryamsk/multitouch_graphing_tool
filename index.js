@@ -254,7 +254,6 @@ function createVisualization() {
 function updateVisualization() {
     //unitVisPadding = 1.5; //pixelsd
     setNumericScale();
-
     // set the x scale based on type of data
     if (isNumericScale) { // numeric scale
         xScale = d3.scaleLinear();
@@ -275,7 +274,7 @@ function updateVisualization() {
 
         // set number of elements in each column
         // get max size in dataset
-
+        
 
         numRowElements = Math.floor((xScale.bandwidth() - unitVisPadding) / ((2 * circleRadius) + unitVisPadding));
     }
@@ -544,7 +543,6 @@ function groupByAttribute(data, attribute) {
             xAxesLabels = attrValues;
         }
     }
-
     sortedAxisLabels = [];
     if (!isNumericScale) {
         let attrVals = Object.keys(attrValuesCount);
@@ -1510,16 +1508,7 @@ function changeXAxis(index) {
     d3.select('#x-axis-label')
         .text(columns[index]);
 
-    //isNumericScale = false;
-
-    // d3.selectAll(".unit").remove();
-    // d3.select('.unit svg').remove();
-    // // visualize(index);
-
-    // groupByAttribute(currentData, attribute);
-    // createVisualization();
-    // updateVisualization();
-
+    setNumericScale();
     groupByAttribute(currentData, attribute);
     updateVisualization();
     if (zoomState !== undefined) zoomed(zoomState.x, zoomState.k);
