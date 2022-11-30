@@ -649,8 +649,6 @@ function sortXAxis(attr) {
 
     // empty redo stack
     redoStack = [];
-
-
 }
 
 
@@ -1298,6 +1296,10 @@ function deselectPoints() {
 }
 
 function undoAction() {
+    // when undo is called, keep only the last 30 elements on the stack
+    if (undoStack.length > 30) {
+        undoStack = undoStack.slice(-30);
+    }
     if (undoStack.length > 1) {
         let curAction = undoStack.pop();
         redoStack.push(curAction);
