@@ -218,7 +218,7 @@ Promise.all(array).then(function (data1) {
         .append("xhtml:body")
         .attr("id", "selection-text")
         .html("<br>Lasso-select datapoints to view stats.<br>");
-    
+
     addActionToUndoStack('default');
 });
 
@@ -610,7 +610,7 @@ function sortXAxis(attr) {
     updateVisualization();
 
     addActionToUndoStack('sortXAxis');
-    
+
 }
 
 
@@ -848,20 +848,12 @@ function setZoom(t) {
 
 function resetZoom() {
     let chart = d3.select("#chart");
-    // chart.transition().duration(750).call(
-    //     chartZoom.transform,
-    //     d3.zoomIdentity,
-    //     d3.zoomTransform(chart.node()).invert([width / 2, height / 2])
-    // );
-    // let t = lastZoomState.transform;
-    // t.k = -1/t.k;
-    // t.x = -1/t.x;
-    // t.y = 0;
-    chart.transition().duration(750).call(chartZoom.transform, d3.zoomIdentity);
-    // d3.select('.x-axis').selectAll("text")
-    //             .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
-
-    //setZoom(t)
+    chart.transition().duration(750).call(
+        chartZoom.transform,
+        d3.zoomIdentity,
+        d3.zoomTransform(chart.node()).invert([width / 2, height / 2])
+    );
+    //chart.transition().duration(750).call(chartZoom.transform, d3.zoomIdentity);
 
 }
 
@@ -1392,7 +1384,6 @@ function createDropDown(data, cols) {
         .attr("class", "dropdown-item")
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
         .on('pointerdown', function (e, d) {
-            attribute = d;
             updateXAxis(columns[columns.indexOf(d)]);
 
         });
@@ -1754,20 +1745,21 @@ function changeShape(shapeId) {
     addActionToUndoStack('changeShape');
 }
 
-function updateXAxis(attribute) {
+function updateXAxis(attr) {
     d3.select("#dropdownMenuButton1")
-        .text(attribute);
+        .text(attr);
     d3.select('#x-axis-label')
-        .text(attribute);
+        .text(attr);
 
-    //resetZoom();
+    d3.select("#chart").call(chartZoom.transform, d3.zoomIdentity);
+    updateUnitViz(lastZoomState.transform.x, lastZoomState.transform.k);
 
+    attribute = attr;
+    
     setNumericScale();
     groupByAttribute(currentData, attribute);
 
     updateVisualization();
-
-    resetZoom();
 
     addActionToUndoStack('updateXAxis');
 }
