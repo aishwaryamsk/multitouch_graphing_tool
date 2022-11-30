@@ -76,7 +76,7 @@ let iconSize = 2 * circleRadius; //default
 let unitVisHtMargin = iconSize;
 let unitVisPadding = 1.5;
 let imgSVGs = [];
-let attrSortOder = 0; // 0: ascending, 1: descending
+let attrSortOrder = 0; // 0: ascending, 1: descending
 let currSize = 20;
 const numInitialShapes = 7;
 
@@ -212,7 +212,7 @@ Promise.all(array).then(function (data1) {
     //     return new bootstrap.Tooltip(tooltipTriggerEl);
     // });
 
-    document.addEventListener("contextmenu", function(event) {event.preventDefault();}, false);
+    // document.addEventListener("contextmenu", function(event) {event.preventDefault();}, false);
 
     d3.select("#selection")
         .append("xhtml:body")
@@ -222,10 +222,12 @@ Promise.all(array).then(function (data1) {
     // add state to undo stack
     undoStack.push({
         action: 'default',
+        attribute: attribute,
         currentData: cloneObj(currentData),
         curDataAttrs: cloneObj(curDataAttrs),
         unitVisHtMargin: unitVisHtMargin,
-        unitVisPadding: unitVisPadding
+        unitVisPadding: unitVisPadding,
+        attrSortOrder: attrSortOrder
     });
 });
 
@@ -282,9 +284,9 @@ function updateVisualization() {
         });
         // xScale.domain(minMax).range([0, width]); // takes number as input
         // sort
-        if (attrSortOder == 0){
-           xScale.domain(minMax).range([0, width]) // takes number as input
-           
+        if (attrSortOrder == 0) {
+            xScale.domain(minMax).range([0, width]) // takes number as input
+
 
         }
         else xScale.domain(minMax.reverse()).range([0, width]);
@@ -292,7 +294,7 @@ function updateVisualization() {
         xScale = d3.scaleBand();
 
         // sort: determine order of columns
-        if (attrSortOder == 0)
+        if (attrSortOrder == 0)
             sortedAxisLabels.sort((a, b) => a.attrName.localeCompare(b.attrName));
         else sortedAxisLabels.sort((a, b) => b.attrName.localeCompare(a.attrName));
 
@@ -389,17 +391,16 @@ function updateUnitViz(tx = 1, tk = 1, shapesData = [], SVGsData = []) {
         .attr("id", d => `unit-icon-${d.id}`)
         .attr('d', function (d) {
             return all_shapes[curDataAttrs[d.id].shapeId].size(curDataAttrs[d.id].size * defSizeRatio)();
-            // if (pathShapeId !== -1)
-            //     return all_shapes[pathShapeId].size(curDataAttrs[d.id].size * defSizeRatio)()
-            // else return all_shapes[curDataAttrs[d.id].shapeId].size(curDataAttrs[d.id].size * defSizeRatio)();
         })
-        .style('fill', d => curDataAttrs[d.id].color)
+        //.style('fill', d => curDataAttrs[d.id].color)
+        .style('fill', function (d) {
+            return curDataAttrs[d.id].color;
+        })
         // .attr("data-toggle", "tooltip")
         // .attr("data-placement", "top")
         // .attr("title", d => d['data']['Candy'])
         .attr('transform', d => plotXY(d, tx, tk))
-        .on("pointerdown", function(e, d){
-            // console.log("pointerdown")
+        .on("pointerdown", function (e, d) {
             let positions = returnXY(d, tx, tk);
             d3.select("#tool-tip")
                 .style("left", positions[0] + "px")
@@ -408,27 +409,27 @@ function updateUnitViz(tx = 1, tk = 1, shapesData = [], SVGsData = []) {
                 .style("opacity", "1")
                 .html(d['data']['Candy'])
         })
-        .on("pointerout", function(e, d){
+        .on("pointerout", function (e, d) {
             // console.log("pointerout")
             d3.select("#tool-tip p")
                 .remove();
         })
-        // .on("mouseover", function(e, d){
-        //     console.log("pointerdown")
-        //     let positions = returnXY(d, tx, tk);
-        //     d3.select("#tool-tip")
-        //         .style("left", positions[0] + "px")
-        //         .style("top", positions[1] + "px")
-        //         .append("p")
-        //         .style("opacity", "1")
-        //         .attr("duration", "100")
-        //         .html(d['data']['Candy'])
-        // })
-        // .on("mouseout", function(e, d){
-        //     console.log("pointerout")
-        //     d3.select("#tool-tip p")
-        //         .remove();
-        // })
+    // .on("mouseover", function(e, d){
+    //     console.log("pointerdown")
+    //     let positions = returnXY(d, tx, tk);
+    //     d3.select("#tool-tip")
+    //         .style("left", positions[0] + "px")
+    //         .style("top", positions[1] + "px")
+    //         .append("p")
+    //         .style("opacity", "1")
+    //         .attr("duration", "100")
+    //         .html(d['data']['Candy'])
+    // })
+    // .on("mouseout", function(e, d){
+    //     console.log("pointerout")
+    //     d3.select("#tool-tip p")
+    //         .remove();
+    // })
 
     // update gs
     d3.selectAll("#chart-content .unit-vis")
@@ -442,7 +443,7 @@ function updateUnitViz(tx = 1, tk = 1, shapesData = [], SVGsData = []) {
         // .attr("data-placement", "top")
         // .attr("title", d => d['data']['Candy'])
         .attr('transform', d => `${plotXY(d, tx, tk)} translate(-10, -10)`)
-        .on("pointerdown", function(e, d){
+        .on("pointerdown", function (e, d) {
             // console.log("pointerdown")
             let positions = returnXY(d, tx, tk);
             d3.select("#tool-tip")
@@ -452,7 +453,7 @@ function updateUnitViz(tx = 1, tk = 1, shapesData = [], SVGsData = []) {
                 .style("opacity", "1")
                 .html(d['data']['Candy'])
         })
-        .on("pointerout", function(e, d){
+        .on("pointerout", function (e, d) {
             // console.log("pointerout")
             d3.select("#tool-tip p")
                 .remove();
@@ -539,7 +540,7 @@ function returnXY(d, tx = 1, tk = 1) {
     }
     let left = tx + (x * tk)
     // console.log("left, ", left, y)
-    return [parseInt(tx + (x * tk)), (y-10)];
+    return [parseInt(tx + (x * tk)), (y - 10)];
 }
 
 /* Helper functions */
@@ -605,11 +606,41 @@ function filterData(attr, lowValue, highValue) {
         }
     }
     groupByAttribute(currentData, attribute);
-    console.log(currentData)
     updateVisualization();
 
     undoStack.push({
         action: 'filterData',
+        attribute: attribute,
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding,
+        attrSortOrder: attrSortOrder
+    });
+
+    // empty redo stack
+    redoStack = [];
+
+    // if (colorEncodingAttribute) {
+    //     // console.log("trying to change colors...", colorEncodingAttribute);
+    //     changeColorByColumn(colorEncodingAttribute);
+    // }
+}
+
+function sortXAxis(attr) {
+    attribute = attr;
+    setNumericScale();
+    groupByAttribute(currentData, attribute);
+    updateVisualization();
+    // restore zoomed state
+    // if (zoomState !== undefined)
+    //     zoomed(zoomState);
+
+    // add action to undoStack
+    undoStack.push({
+        action: 'sortXAxis',
+        attribute: attribute,
+        sortOrder: attrSortOrder,
         currentData: cloneObj(currentData),
         curDataAttrs: cloneObj(curDataAttrs),
         unitVisHtMargin: unitVisHtMargin,
@@ -619,19 +650,7 @@ function filterData(attr, lowValue, highValue) {
     // empty redo stack
     redoStack = [];
 
-    if (colorEncodingAttribute){
-        // console.log("trying to change colors...", colorEncodingAttribute);
-        changeColorByColumn(colorEncodingAttribute);
-    }
-}
 
-function updateXAttribute(attr) {
-    attribute = attr;
-    groupByAttribute(currentData, attribute);
-    updateVisualization();
-    // restore zoomed state
-    if (zoomState !== undefined)
-        zoomed(zoomState);
 }
 
 
@@ -702,25 +721,25 @@ function setData(d) {
 */
 function setHandlers(name) {
     // Install event handlers for the given element    
-       
-        const el = document.getElementById(name);
-        el.onpointerdown = pointerdownHandler;
 
-        // Use same handler for pointer{up,cancel,out,leave} events since
-        // the semantics for these events - in this app - are the same.
-        el.onpointerup = pointerupHandler;
-        el.onpointercancel = pointerupHandler;
-        //el.onpointerout = pointerupHandler; // moving to descendent (unit circles) triggers pointerout 
-        el.onpointerleave = pointerupHandler;
+    const el = document.getElementById(name);
+    el.onpointerdown = pointerdownHandler;
 
-        // el.onpointermove = pinchZoom(ev, 'xy');
-        // console.log("cache", evCacheContent.length);
-        
-        el.onpointermove = fingerSwipe;
+    // Use same handler for pointer{up,cancel,out,leave} events since
+    // the semantics for these events - in this app - are the same.
+    el.onpointerup = pointerupHandler;
+    el.onpointercancel = pointerupHandler;
+    //el.onpointerout = pointerupHandler; // moving to descendent (unit circles) triggers pointerout 
+    el.onpointerleave = pointerupHandler;
+
+    // el.onpointermove = pinchZoom(ev, 'xy');
+    // console.log("cache", evCacheContent.length);
+
+    el.onpointermove = fingerSwipe;
 
     // move handlers for different targets
     // if (name === 'lasso-selectable-area')
-        // el.onpointermove = pinchZoomXY;
+    // el.onpointermove = pinchZoomXY;
     /*else if (name === 'x-axis-content')
         el.onpointermove = pinchZoomX; */
 }
@@ -745,7 +764,7 @@ function pointerdownHandler(ev) {
     doubleTapHandler(ev);
     // swipe left/right handler
     startFingerSwipe(ev);
-    
+
     // console.log("inside pointerdown handler")
 }
 
@@ -868,7 +887,7 @@ function resetZoom() {
         d3.zoomIdentity,
         d3.zoomTransform(chart.node()).invert([width / 2, height / 2])
     );
-    
+
 }
 
 function setNumericScale() {
@@ -879,9 +898,9 @@ function setNumericScale() {
 
 var prevPotrLoc = undefined; // pointer 0
 function startFingerSwipe(ev) {
-    if (evCacheContent.length === 3){
+    if (evCacheContent.length === 3) {
 
-        if (prevPotrLoc === undefined || prevPotrLoc.length==2) {
+        if (prevPotrLoc === undefined || prevPotrLoc.length == 2) {
 
             const evCache = getCache(ev);
             const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
@@ -895,8 +914,8 @@ function startFingerSwipe(ev) {
         // console.log("three!", evCacheContent);
         // fingerSwipe();
 
-    } 
-    else if (evCacheContent.length === 2){
+    }
+    else if (evCacheContent.length === 2) {
 
         if (prevPotrLoc === undefined) {
 
@@ -915,13 +934,13 @@ function startFingerSwipe(ev) {
     }
 }
 
-function fingerSwipe(ev){
+function fingerSwipe(ev) {
 
-    if(evCacheContent.length == 3){
+    if (evCacheContent.length == 3) {
 
         // console.log("inside three!")
         // console.log("cache", evCacheContent.length);   
-    
+
         const evCache = getCache(ev);
         // console.log("getcache", ev, evCache[0], evCache[1], evCache[2]);
         if (ev != undefined && evCache && evCache.length === 3) {
@@ -929,7 +948,7 @@ function fingerSwipe(ev){
             const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
             evCache[index] = ev;
             // console.log("swipe ended", ev, evCache[0], evCache[1], evCache[2]);
-    
+
             // If two pointers are down and the distance between each pointer move is positive/negative along an axis, determine swipe direction
             // Calculate the distance between the previous pointer location and current
             if (prevPotrLoc === undefined) {
@@ -940,7 +959,7 @@ function fingerSwipe(ev){
             // console.log("swipe ended", prevPotrLoc, ev.clientX, ev.clientY)
             var xDiff = prevPotrLoc[0].x - ev.clientX;
             var yDiff = prevPotrLoc[0].y - ev.clientY;
-    
+
             if (Math.abs(xDiff) > Math.abs(yDiff)) {
                 change = 0;
                 // console.log("inside three!!!")
@@ -954,7 +973,7 @@ function fingerSwipe(ev){
                     undoAction();
                 }
             }
-    
+
             /* reset values */
             prevPotrLoc = undefined;
         }
@@ -968,21 +987,21 @@ function fingerSwipe(ev){
             const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
             evCache[index] = ev;
             // console.log("swipe ended", evCache[0], evCache[1]);
-    
+
             // If two pointers are down and the distance between each pointer move is positive/negative along an axis, determine swipe direction
             // Calculate the distance between the previous pointer location and current
             if (prevPotrLoc === undefined) {
                 return;
             }
-    
+
             let curDiff = -1;
-        
+
 
             // var x = ev.clientX;
             // var y = ev.clientY;
             // var xDiff = prevPotrLoc[index].x - x;
             // var yDiff = prevPotrLoc[index].y - y;
-    
+
             let x = evCache[1].clientX - evCache[0].clientX;
             let y = evCache[1].clientY - evCache[0].clientY;
             curDiff = Math.sqrt(x * x + y * y);
@@ -990,34 +1009,34 @@ function fingerSwipe(ev){
 
             // console.log("change ", change);
 
-            if(prevDiff > 0){
+            if (prevDiff > 0) {
 
-                newSize = parseFloat(currSize) + (curDiff - prevDiff)/10;
+                newSize = parseFloat(currSize) + (curDiff - prevDiff) / 10;
                 // console.log(newSize, parseFloat(currSize), prevDiff);
-        
+
                 if (newSize >= 10 && newSize <= 40) {
                     currSize = newSize;
-    
+
                     if (curDiff > prevDiff) {
                         // console.log("inc size ", change);
-                        if(currChange == "inc"){
+                        if (currChange == "inc") {
                             change += 1;
                         }
                         currChange = "inc"
-                        
+
                     }
                     if (curDiff < prevDiff) {
                         // console.log("reduce size ", change);
-                        if(currChange == "dec"){
+                        if (currChange == "dec") {
                             change += 1;
                         }
                         currChange = "dec"
                         change += 1;
-                    }                
-                    
+                    }
+
                     // console.log(change, parseFloat(currSize), curDiff, prevDiff);
-                    if(change > 2){
-                        
+                    if (change > 2) {
+
                         changeSize(parseFloat(currSize));
                         document.getElementById("pickSize").value = parseFloat(currSize);
 
@@ -1282,13 +1301,21 @@ function undoAction() {
     if (undoStack.length > 1) {
         let curAction = undoStack.pop();
         redoStack.push(curAction);
+
         // current displayed state is the last item on undo stack
         let prevAction = undoStack.at(-1);
-        if (['changeColor', 'changeShape', 'changeSize', 'filterData', 'default'].includes(prevAction.action)) {
+        if (['changeColor', 'changeShape', 'filterData', 'changeSize', 'sortXAxis', 'updateXAxis', 'default'].includes(prevAction.action)) {
             currentData = cloneObj(prevAction.currentData);
             curDataAttrs = cloneObj(prevAction.curDataAttrs);
             unitVisHtMargin = prevAction.unitVisHtMargin;
             unitVisPadding = prevAction.unitVisPadding;
+            attrSortOrder = prevAction.attrSortOrder;
+            attribute = prevAction.attribute;
+            d3.select("#dropdownMenuButton1").text(attribute);
+            d3.select('#x-axis-label').text(attribute);
+
+            setNumericScale();
+            groupByAttribute(currentData, attribute);
             updateVisualization();
         }
     }
@@ -1298,11 +1325,17 @@ function redoAction() {
     if (redoStack.length >= 1) {
         let curAction = redoStack.pop();
         undoStack.push(curAction);
-        if (['changeColor', 'changeShape', 'changeSize', 'filterData', 'default'].includes(curAction.action)) {
+        if (['changeColor', 'changeShape', 'filterData', 'changeSize', 'sortXAxis', 'updateXAxis', 'default'].includes(curAction.action)) {
             currentData = cloneObj(curAction.currentData);
             curDataAttrs = cloneObj(curAction.curDataAttrs);
             unitVisHtMargin = curAction.unitVisHtMargin;
             unitVisPadding = curAction.unitVisPadding;
+            attrSortOrder = curAction.attrSortOrder;
+            attribute = curAction.attribute;
+            d3.select("#dropdownMenuButton1").text(attribute);
+            d3.select('#x-axis-label').text(attribute);
+            setNumericScale();
+            groupByAttribute(currentData, attribute);
             updateVisualization();
         }
     }
@@ -1382,17 +1415,8 @@ function createDropDown(data, cols) {
         .attr("class", "dropdown-item")
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
         .on('pointerdown', function (e, d) {
-
-            index = columns.indexOf(d);
-            // console.log("att", d, index);
             attribute = d;
-            changeXAxis(index);
-
-            // if (d == "Candy" || Object.keys(attrValuesCount).length === 2) {
-            //     d3.selectAll(".form-check").style("display", "block");
-            // } else {
-            //     d3.selectAll(".form-check").style("display", "none");
-            // }
+            updateXAxis(columns[columns.indexOf(d)]);
 
         });
 
@@ -1549,6 +1573,25 @@ function changeSizeByCol(colname, min, max) {
         // d3.select(name).attr('width', reqsize).attr('height', reqsize);
         updateSize(d3.select(name), parseInt(reqsize))
     }
+
+    // store action in undo stack
+    undoStack.push({
+        action: 'changeSize',
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding,
+        attribute: attribute,
+        attrSortOrder: attrSortOrder
+    });
+
+    // empty redo stack
+    redoStack = [];
+    // console.log("col", colorEncodingAttribute);
+    // if (colorEncodingAttribute) {
+    //     // console.log("trying to change colors...", colorEncodingAttribute);
+    //     changeColorByColumn(colorEncodingAttribute);
+    // }
 }
 
 function changeColor(defaultColor) {
@@ -1562,10 +1605,12 @@ function changeColor(defaultColor) {
     // add action to undoStack
     undoStack.push({
         action: 'changeColor',
+        attribute: attribute,
         currentData: cloneObj(currentData),
         curDataAttrs: cloneObj(curDataAttrs),
         unitVisHtMargin: unitVisHtMargin,
-        unitVisPadding: unitVisPadding
+        unitVisPadding: unitVisPadding,
+        attrSortOrder: attrSortOrder
     });
 
     // empty redo stack
@@ -1596,21 +1641,22 @@ function changeSize(newSize) {
         updateVisualization();
     }
     // store action in undo stack
-    undoStack.push({
-        action: 'changeSize',
-        currentData: cloneObj(currentData),
-        curDataAttrs: cloneObj(curDataAttrs),
-        unitVisHtMargin: unitVisHtMargin,
-        unitVisPadding: unitVisPadding
-    });
+    // undoStack.push({
+    //     action: 'changeSize',
+    //     attribute: attribute,
+    //     currentData: cloneObj(currentData),
+    //     curDataAttrs: cloneObj(curDataAttrs),
+    //     unitVisHtMargin: unitVisHtMargin,
+    //     unitVisPadding: unitVisPadding
+    // });
 
     // empty redo stack
-    redoStack = [];
+    //redoStack = [];
     // console.log("col", colorEncodingAttribute);
-    if (colorEncodingAttribute){
-        // console.log("trying to change colors...", colorEncodingAttribute);
-        changeColorByColumn(colorEncodingAttribute);
-    }
+    // if (colorEncodingAttribute) {
+    //     // console.log("trying to change colors...", colorEncodingAttribute);
+    //     changeColorByColumn(colorEncodingAttribute);
+    // }
 }
 
 function updateSize(selection, newSize) {
@@ -1643,7 +1689,7 @@ function changeShape(shapeId) {
             }
         }
 
-        
+
 
         // changing to shape
         if (shapeId < numInitialShapes) {
@@ -1747,10 +1793,10 @@ function changeShape(shapeId) {
             d3.selectAll(".unit svg rect").attr("fill", "none");
         }
 
-        if (colorEncodingAttribute){
-            // console.log("trying to change colors...", colorEncodingAttribute);
-            changeColorByColumn(colorEncodingAttribute);
-        }
+        // if (colorEncodingAttribute) {
+        //     // console.log("trying to change colors...", colorEncodingAttribute);
+        //     changeColorByColumn(colorEncodingAttribute);
+        // }
     }
     defineLassoSelection();
     // restore zoomed state
@@ -1758,143 +1804,42 @@ function changeShape(shapeId) {
 
     undoStack.push({
         action: 'changeShape',
+        attribute: attribute,
         currentData: cloneObj(currentData),
         curDataAttrs: cloneObj(curDataAttrs),
         unitVisHtMargin: unitVisHtMargin,
-        unitVisPadding: unitVisPadding
+        unitVisPadding: unitVisPadding,
+        attrSortOrder: attrSortOrder
     });
 
     // empty redo stack
     redoStack = [];
 }
 
-function updateShapes2(selection, shape, shapeId) {
-    for (let elm of selection) {
-        let id = d3.select(elm).attr('id').split('-').at(-1);
-        let dataPt;
-        for (let d of Object.values(currentData)) {
-            if (d.id == id) {
-                dataPt = d;
-                break;
-            }
-        };
-        let units = d3.selectAll('.unit-vis');
-        if (shapeId < numInitialShapes) {
-            //d3.select(`#unit-icon-${id}`).classed("selected", false);
-            // d3.select(`#unit-icon-${id}`).remove();
-            // units.append('path')
-            //     .attr('d', shape.size(currentFtrs.size * 6)())
-            //     .attr('id', `unit-icon-${id}`)
-            //     .attr("class", "unit")
-            //     .attr('fill', curDataAttrs[id].color)
-            //     .attr('transform', `${plotXY(dataPt)}`);
-
-            d3.select(`#unit-icon-${id} path`)
-                .attr('d', "disable")
-                .attr('fill', "disable")
-                .attr('transform', "disable");
-
-            d3.select(`#unit-icon-${id} path`)
-                .attr('d', all_shapes[shapeId])
-                .attr('fill', curDataAttrs[id].color)
-                .attr('transform', `${plotXY(dataPt)}`);
-
-            //             d3.select(`#unit-icon-${id}`)
-            //                 .attr('d', "disable")
-            //                 .attr('fill', "disable")
-            //                 .attr('transform', "disable");
-
-            //             d3.select(`#unit-icon-${id}`)
-            //                 .attr('d', all_shapes[shapeId])
-            //                 .attr('fill', curDataAttrs[id].color)
-            //                 .attr('transform', `${plotXY(dataPt)}`);
-
-            curDataAttrs[id].shapeId = shapeId;
-        } else {
-            //d3.select(`#unit-icon-${id}`).classed("selected", false);
-            // d3.select(`#unit-icon-${id}`).remove();
-
-            d3.select(`#unit-icon-${id} g`).remove();
-            d3.select(`#unit-icon-${id} path`).remove();
-            let s = imgSVGs[shapeId - numInitialShapes];
-
-            d3.select(s).attr('id', `unit-${id}`).style('fill', curDataAttrs[id].color);
-            // let g = units
-            //     .append('g')
-            //     .attr("class", "unit")
-            //     .attr("data-toggle", "tooltip")
-            //     .attr("data-placement", "top")
-            //     .attr("title", dataPt.data['Candy'])
-            //     .attr("id", `unit-icon-${id}`)
-            //     .attr('transform', `${plotXY(dataPt)} translate(-10, -10)`);
-            // g.node().append(s.cloneNode(true));
-
-            let g = d3.select(`#unit-icon-${id}`)
-                .append('g')
-                .attr("class", "unit")
-                // .attr("data-toggle", "tooltip")
-                // .attr("data-placement", "top")
-                // .attr("title", dataPt.data['Candy'])
-                .attr("id", `unit-icon-${id}`)
-                .attr('transform', `${plotXY(dataPt)} translate(-10, -10)`);
-            g.node().append(s.cloneNode(true));
-
-        }
-        curDataAttrs[id].shapeId = shapeId;
-    }
-}
-
-function changeXAxis(index) {
-
-    // console.log("changin axis", attribute);
+function updateXAxis(attribute) {
     d3.select("#dropdownMenuButton1")
-        .text(columns[index]);
+        .text(attribute);
     d3.select('#x-axis-label')
-        .text(columns[index]);
-
-    //isNumericScale = false;
-
-    // d3.selectAll(".unit").remove();
-    // d3.select('.unit svg').remove();
-    // // visualize(index);
-
-    // groupByAttribute(currentData, attribute);
-    // createVisualization();
-    // updateVisualization();
+        .text(attribute);
 
     setNumericScale();
     groupByAttribute(currentData, attribute);
     updateVisualization();
     if (zoomState !== undefined) zoomed(zoomState.x, zoomState.k);
-    if (colorEncodingAttribute){
-        // console.log("trying to change colors...", colorEncodingAttribute);
-        changeColorByColumn(colorEncodingAttribute);
-    }
+
+    undoStack.push({
+        action: 'updateXAxis',
+        attribute: attribute,
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding,
+        attrSortOrder: attrSortOrder
+    });
+
+    // empty redo stack
+    redoStack = [];
 }
-
-// function visualize(colindex) {
-//     attribute = columns[colindex];
-//     //currentData = groupByAttribute(dataset, attribute);
-//     groupByAttribute(dataset, attribute);
-//     createVisualization();
-//     updateVisualization();
-// }
-
-// function findShape(shape) {
-//     // console.log("shape", shape, shape.slice(6));
-//     // console.log(d3.select(".unit svg path"));
-
-//     // changing from user svg to d3 shape
-//     if (!d3.select(".unit svg path").empty()) {
-//         d3.selectAll(".unit svg path").remove();
-//         d3.selectAll(".unit svg").attr("xmlns", null).attr("d", null);
-//         d3.selectAll(".unit svg")
-//             .attr("width", currSize).attr("height", currSize)
-//             .append("path").attr("d", all_shapes[shape.slice(6)])
-//             .attr("transform", "scale(8) translate(10, 10)");
-//     }
-//     // changing from d3 shape to user svg
-// }
 
 function sortAxis(colName) {
 
@@ -1902,46 +1847,48 @@ function sortAxis(colName) {
         .text(colName);
 }
 
-function changeColorByColumn(colName){
+function changeColorByColumn(colName) {
     d3.select("#dropdownMenuButton3").text(colName);
     let list_items = allData.map((d) => d['data'][colName]);
 
-    if(['Win Percent', 'Sugar Percent', 'Price Percent'].includes(colName)){
-        
-        // console.log("items", list_items);
-        // console.log("min", Math.min(...list_items));
-        // console.log("max", Math.max(...list_items));
-    
+    if (['Win Percent', 'Sugar Percent', 'Price Percent'].includes(colName)) {
         let min = Math.min(...list_items);
         let max = Math.max(...list_items);
-    
+
         //Ref: https://stackoverflow.com/questions/41848677/how-to-make-a-color-scale-in-d3-js-to-use-in-fill-attribute
         colorXScale = d3.scaleLinear().domain([min, max]).range(["#42eba1", defaultColor]);
-        
+
     } else {
         colorXScale = d3.scaleLinear().domain([...new Set(list_items)]).range(["#42eba1", defaultColor]);//.range(d3.schemeSet3);
     }
-        // console.log(colorXScale);
-        d3.selectAll("path.unit")
-            .style("fill", d => {
-                if(d != undefined){    
-                    // console.log("d ", d['data'][colName]); 
-                    // console.log(colorXScale(d['data'][colName])); 
-                    return(colorXScale(d['data'][colName]))}
-    
-                }
-            );
-        
-        for (let d of currentData) {
-            let name = "#unit-" + d.id;
+    d3.selectAll("path.unit")
+        .style("fill", d => {
+            if (d != undefined) {
+                let color = colorXScale(d['data'][colName]);
+                // store the current color
+                curDataAttrs[d.id].color = color;
+                return color;
+            }
+        });
 
-            // console.log("d ", d['data'][colName]);
-            // console.log(colorXScale(d['data'][colName]));
-            let color = colorXScale(d['data'][colName]);
+    for (let d of currentData) {
+        let name = "#unit-" + d.id;
+        let color = colorXScale(d['data'][colName]);
+        // store the current color
+        curDataAttrs[d.id].color = color;
+        d3.select(name).style("fill", color);
+    }
 
-            d3.select(name)
-                .style("fill", color);
-        }
+    // add state to undo stack
+    undoStack.push({
+        action: 'changeColor',
+        attribute: attribute,
+        currentData: cloneObj(currentData),
+        curDataAttrs: cloneObj(curDataAttrs),
+        unitVisHtMargin: unitVisHtMargin,
+        unitVisPadding: unitVisPadding,
+        attrSortOrder: attrSortOrder
+    });
 }
 
 function filterAxis(colName) {
@@ -2130,8 +2077,8 @@ function changeTab() {
 
 
 function orderXAxis(radio) {
-    attrSortOder = radio.value;
-    updateXAttribute(attribute);
+    attrSortOrder = radio.value;
+    sortXAxis(attribute);
 }
 
 //Code credits: https://codepen.io/eleviven/pen/eYmwzLp
@@ -2155,12 +2102,12 @@ function touchEnd() {
 onlongtouch = function () {
     // d3.select("#side-panel").style("background-color", "black")
 
-    if (attrSortOder == 0) {
-        attrSortOder = 1;
+    if (attrSortOrder == 0) {
+        attrSortOrder = 1;
     } else {
-        attrSortOder = 0;
+        attrSortOrder = 0;
     }
-    updateXAttribute(attribute);
+    sortXAxis(attribute);
 }
 
 document.addEventListener("DOMContentLoaded", function () {
