@@ -54,6 +54,8 @@ html, body{
 
 #main-panel{
     background-color: rgb(255, 255, 255);
+    position: relative;
+    top: -5vh;
 }
 
 .nav-pills, .nav-link{
@@ -141,15 +143,15 @@ html, body{
     fill-opacity: .5;
 }
 
-/* .not_possible {
+.not_possible {
     fill: rgb(200, 200, 200);
 }
 
 .possible {
     fill: #EC888C;
-} */
+}
 
-.selected {
+.selected, .singleHL {
     stroke: black;
     stroke-width: 2px;
 }
@@ -195,3 +197,23 @@ h6{
 body>svg{
     cursor: pointer;
 }
+
+/* path{
+    cursor: pointer;
+} */
+
+@keyframes opacity_change{
+    0% {opacity: 1;}
+    75% {opacity: 1;}
+    100% {opacity: 0;}
+}
+
+#tool-tip{
+    position: absolute;
+}
+
+/* #tool-tip p{    
+    animation-name: opacity_change;
+    animation-duration: 3s;
+    animation-iteration-count: 1;
+} */
