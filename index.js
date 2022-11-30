@@ -251,9 +251,9 @@ function createVisualization() {
         .append('clipPath')
         .attr('id', 'clipx')
         .append('rect')
-        .attr('x', -10)
+        .attr('x', -20)
         .attr('y', 0)
-        .attr('width', width + 20)
+        .attr('width', width + 40)
         .attr('height', height);
 
 
@@ -1269,7 +1269,6 @@ function undoAction() {
     if (undoStack.length > 1) {
         let curAction = undoStack.pop();
         redoStack.push(curAction);
-
         // current displayed state is the last item on undo stack
         let prevAction = undoStack.at(-1);
         if (['changeColor', 'changeShape', 'filterData', 'changeSize', 'sortXAxis', 'updateXAxis', 'default'].includes(prevAction.action)) {
