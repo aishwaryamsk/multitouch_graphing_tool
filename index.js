@@ -66,7 +66,7 @@ let shapeNum = 7;
 let evCacheContent = [];
 let evCacheXAxis = [];
 let prevDiff = -1; // for pinch-zoom -- any direction
-let zoomState;
+let lastZoomState;
 let onePointerTappedTwice = false;
 let twoPointersTappedTwice = false;
 
@@ -366,6 +366,7 @@ function updateVisualization() {
         .attr("font-size", "1.2em");
 
     defineLassoSelection();
+
 }
 
 
@@ -632,9 +633,6 @@ function sortXAxis(attr) {
     setNumericScale();
     groupByAttribute(currentData, attribute);
     updateVisualization();
-    // restore zoomed state
-    // if (zoomState !== undefined)
-    //     zoomed(zoomState);
 
     // add action to undoStack
     undoStack.push({
@@ -844,47 +842,62 @@ let chartZoom = d3.zoom()
 
 function zoomed(e) {
     if (e) {
+        lastZoomState = cloneObj(e);
         let t = e.transform;
-        let gXAxis = d3.select('.x-axis');
 
-        if (isNumericScale) {
-            // numeric scale
-            // create new scale oject based on event
-            var new_xScale = t.rescaleX(xScale);
-            // update axes
-            gXAxis.call(xAxis.scale(new_xScale));
-        } else {
-            // categorical scale
-            // transform x-axis g tag
-            gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
-                .attr('stroke-width', '0.05em');
-
-            if (sortedAxisLabels.length > 5) {
-                gXAxis.selectAll('text')
-                    .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} rotate(-45)`)
-                    .style("text-anchor", "end")
-                if (sortedAxisLabels.length > 30) {
-                    gXAxis
-                        .style("font-size", "0.5em");
-                }
-            } else {
-                // transform texts
-                gXAxis.selectAll("text")
-                    .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
-            }
-        }
+        setZoom(t);
         // transform circles along x-axis only
         updateUnitViz(t.x, t.k);
     }
 };
 
+function setZoom(t) {
+    let gXAxis = d3.select('.x-axis');
+
+    if (isNumericScale) {
+        // numeric scale
+        // create new scale oject based on event
+        var new_xScale = t.rescaleX(xScale);
+        // update axes
+        gXAxis.call(xAxis.scale(new_xScale));
+    } else {
+        // categorical scale
+        // transform x-axis g tag
+        gXAxis.attr("transform", d3.zoomIdentity.translate(t.x, 0).scale(t.k))
+            .attr('stroke-width', '0.05em');
+
+        if (sortedAxisLabels.length > 5) {
+            gXAxis.selectAll('text')
+                .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} rotate(-45)`)
+                .style("text-anchor", "end")
+            if (sortedAxisLabels.length > 30) {
+                gXAxis
+                    .style("font-size", "0.5em");
+            }
+        } else {
+            // transform texts
+            gXAxis.selectAll("text")
+                .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
+        }
+    }
+}
+
 function resetZoom() {
     let chart = d3.select("#chart");
-    chart.transition().duration(750).call(
-        chartZoom.transform,
-        d3.zoomIdentity,
-        d3.zoomTransform(chart.node()).invert([width / 2, height / 2])
-    );
+    // chart.transition().duration(750).call(
+    //     chartZoom.transform,
+    //     d3.zoomIdentity,
+    //     d3.zoomTransform(chart.node()).invert([width / 2, height / 2])
+    // );
+    // let t = lastZoomState.transform;
+    // t.k = -1/t.k;
+    // t.x = -1/t.x;
+    // t.y = 0;
+    chart.transition().duration(750).call(chartZoom.transform, d3.zoomIdentity);
+    // d3.select('.x-axis').selectAll("text")
+    //             .attr("transform", `${d3.zoomIdentity.scale(1 / t.k)} `);
+
+    //setZoom(t)
 
 }
 
@@ -1659,6 +1672,7 @@ function changeSize(newSize) {
     //     // console.log("trying to change colors...", colorEncodingAttribute);
     //     changeColorByColumn(colorEncodingAttribute);
     // }
+    if (lastZoomState !== {}) zoomed(lastZoomState);
 }
 
 function updateSize(selection, newSize) {
@@ -1795,14 +1809,12 @@ function changeShape(shapeId) {
             d3.selectAll(".unit svg rect").attr("fill", "none");
         }
 
-        // if (colorEncodingAttribute) {
-        //     // console.log("trying to change colors...", colorEncodingAttribute);
-        //     changeColorByColumn(colorEncodingAttribute);
-        // }
+        // restore to the last zoomed state
+        //zoomed(lastZoomState);
     }
     defineLassoSelection();
-    // restore zoomed state
-    if (zoomState !== undefined) zoomed(zoomState);
+    // restore to the last zoomed state
+    if (lastZoomState !== {}) zoomed(lastZoomState);
 
     undoStack.push({
         action: 'changeShape',
@@ -1824,10 +1836,14 @@ function updateXAxis(attribute) {
     d3.select('#x-axis-label')
         .text(attribute);
 
+    //resetZoom();
+
     setNumericScale();
     groupByAttribute(currentData, attribute);
+
     updateVisualization();
-    if (zoomState !== undefined) zoomed(zoomState.x, zoomState.k);
+
+    resetZoom();
 
     undoStack.push({
         action: 'updateXAxis',
