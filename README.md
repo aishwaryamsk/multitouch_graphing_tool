@@ -1,7 +1,9 @@
 # Multi Touch Graphing Tool
 A graphing tool to explore data using multi-touch gestures.
 
-**Link:** [View Tool](https://aishwaryamsk.github.io/multitouch_graphing_tool/index.html)
+**Presentation Link:** [View](https://gtvault-my.sharepoint.com/:p:/g/personal/amsk3_gatech_edu/ES6rJc-Tf01NhIilNXDFtS0BR7X_HIU2caQsDdxAWmZCyg?e=s6xVxS)
+
+**Demo Link:** [View](https://aishwaryamsk.github.io/multitouch_graphing_tool/index.html)
 
 Dataset source -- Kaggle: https://www.kaggle.com/datasets/fivethirtyeight/the-ultimate-halloween-candy-power-ranking
 
