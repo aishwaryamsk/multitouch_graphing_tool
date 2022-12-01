@@ -8,8 +8,9 @@ let unitYScale; // scale for unit vis on y-axis
 let xAxis;
 let numRowElements;
 let colorXScale;
-
 let attribute = null;
+let sizeXScale;
+let legendSize;
 
 let tooltipTriggerList;
 let col_values;
@@ -20,7 +21,7 @@ let change = 0;
 let currChange;
 let colorEncodingAttribute = false;
 let tooltip;
-
+let legendLinear;
 let tip;
 
 let cols_lower, cols;
@@ -88,7 +89,7 @@ Promise.all(array).then(function (data1) {
     d3.select(svgNode)
         .attr('height', 18)
         .attr('width', 18)
-        .style('fill', 'brown');
+        // .style('fill', 'brown');
     iconSize = 20;
     imgSVGs.push(svgNode);
 
@@ -113,6 +114,7 @@ Promise.all(array).then(function (data1) {
             .style("transform", "translateX(8px)")
             // .style("padding", "20px")
             .style("scale", "200%")
+            .style("margin-top", "30px")
             .append("path")
             .attr("class", "pickShape")
             .style("cursor", "pointer")
@@ -149,7 +151,7 @@ Promise.all(array).then(function (data1) {
     })
 
     d3.select("#shapes body svg")
-        .style("fill", defaultColor)
+        // .style("fill", defaultColor)
 
     // CHANGE LATER?: initially, use chocolate as an attribute to group on
     //attribute = 'fruity';
@@ -220,6 +222,11 @@ Promise.all(array).then(function (data1) {
         .html("<br>Lasso-select datapoints to view stats.<br>");
 
     addActionToUndoStack('default');
+
+    // var linear = d3.scaleLinear()
+    // .domain([0,10])
+    // .range(["rgb(46, 73, 123)", "rgb(71, 187, 94)"]);
+
 });
 
 function createVisualization() {
@@ -357,6 +364,7 @@ function updateVisualization() {
         .attr("font-size", "1.2em");
 
     defineLassoSelection();
+    // displayLegend();
 
 }
 
@@ -532,7 +540,7 @@ function returnXY(d, tx = 1, tk = 1) {
     }
     let left = tx + (x * tk)
     // console.log("left, ", left, y)
-    return [parseInt(tx + (x * tk)), (y - 10)];
+    return [parseInt(tx + (x * tk)), (y - 50)];
 }
 
 /* Helper functions */
@@ -582,8 +590,8 @@ function importImgSVG(data) {
             changeShape(e['target']['parentElement']['id'].slice(6));
         })
 
-        d3.select("#shapes body svg")
-            .style("fill", defaultColor);
+        // d3.select("#shapes body svg")
+            // .style("fill", defaultColor);
     }
 }
 
@@ -866,6 +874,24 @@ function setNumericScale() {
 
 var prevPotrLoc = undefined; // pointer 0
 function startFingerSwipe(ev) {
+    if (evCacheContent.length === 4) {
+
+        if (prevPotrLoc === undefined || prevPotrLoc.length == 2  || prevPotrLoc.length == 3) {
+
+            const evCache = getCache(ev);
+            const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+            evCache[index] = ev;
+            // console.log("three swipe started", ev, evCache[0], evCache[1], evCache[2]);
+            prevPotrLoc = [{ x: evCache[0].clientX, y: evCache[0].clientY }, { x: evCache[1].clientX, y: evCache[1].clientY }, { x: evCache[2].clientX, y: evCache[2].clientY }, { x: evCache[3].clientX, y: evCache[3].clientY }];
+            // console.log(prevPotrLoc);
+        }
+
+
+        // ev.preventDefault();
+        // console.log("four!", evCacheContent);
+        // fingerSwipe();
+
+    } else
     if (evCacheContent.length === 3) {
 
         if (prevPotrLoc === undefined || prevPotrLoc.length == 2) {
@@ -904,7 +930,53 @@ function startFingerSwipe(ev) {
 
 function fingerSwipe(ev) {
 
-    if (evCacheContent.length == 3) {
+    if (evCacheContent.length == 4) {
+
+        const evCache = getCache(ev);
+        // console.log("getcache", ev, evCache[0], evCache[1], evCache[2]);
+        if (ev != undefined && evCache && evCache.length === 4) {
+            console.log("four finger swipe")
+            const index = evCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId);
+            evCache[index] = ev;
+            // console.log("swipe ended", ev, evCache[0], evCache[1], evCache[2]);
+
+            // If two pointers are down and the distance between each pointer move is positive/negative along an axis, determine swipe direction
+            // Calculate the distance between the previous pointer location and current
+            if (prevPotrLoc === undefined) {
+                return;
+            }
+            // var x = ev.clientX;
+            // var y = ev.clientY;
+            // console.log("swipe ended", prevPotrLoc, ev.clientX, ev.clientY)
+            var xDiff = prevPotrLoc[0].x - ev.clientX;
+            var yDiff = prevPotrLoc[0].y - ev.clientY;
+
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                change = 0;
+                // console.log("inside three!!!")
+                if (xDiff > 0) {
+                    /* right swipe: undo */
+                    console.log('swipe left 4')
+                    if(columns.indexOf(attribute)!=12){
+                        updateXAxis(columns[columns.indexOf(attribute) + 1])
+                    }
+                    
+                    // redoAction();
+                } else if (xDiff < 0) {
+                    /* left swipe: redo */
+                    console.log('swipe right 4');
+                    if(columns.indexOf(attribute)!=0){
+                        updateXAxis(columns[columns.indexOf(attribute) - 1])
+                    }
+                    
+                    // undoAction();
+                }
+            }
+
+            /* reset values */
+            prevPotrLoc = undefined;
+        }
+    } else if (evCacheContent.length == 3) {
 
         // console.log("inside three!")
         // console.log("cache", evCacheContent.length);   
@@ -1384,6 +1456,7 @@ function createDropDown(data, cols) {
         .attr("class", "dropdown-item")
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
         .on('pointerdown', function (e, d) {
+            console.log(columns.indexOf(d), columns[columns.indexOf(d)])
             updateXAxis(columns[columns.indexOf(d)]);
 
         });
@@ -1432,7 +1505,9 @@ function createDropDown(data, cols) {
         .text((d) => (d[0].toUpperCase() + d.slice(1)))
         .on('pointerdown', function (e, d) {
             console.log("att", d);
-            getColforSize(d);
+            let sizeAtt = getColforSize(d);
+            displaySizeLegend(sizeAtt[0], sizeAtt[1], sizeAtt[2])
+            // displaySizeLegend(d);
         });
 
     d3.select("#dropdown-menu7")
@@ -1521,6 +1596,7 @@ function getColforSize(colname) {
     });
     console.log("Range", min, max);
     changeSizeByCol(colname, min, max);
+    return [colname, min, max];
 }
 
 function changeSizeByCol(colname, min, max) {
@@ -1570,7 +1646,7 @@ function changeColor(color) {
         updateColors(selection, color);
     // applied to all data points
     else updateColors(d3.selectAll('.unit'), color);
-    d3.selectAll("#shapes svg path").style('fill', color);
+    d3.selectAll(".pickShape").style('fill', color);
 
     addActionToUndoStack('changeColor');
 }
@@ -1781,9 +1857,13 @@ function changeColorByColumn(colName) {
         //Ref: https://stackoverflow.com/questions/41848677/how-to-make-a-color-scale-in-d3-js-to-use-in-fill-attribute
         colorXScale = d3.scaleLinear().domain([min, max]).range(["#42eba1", defaultColor]);
 
-    } else {
+    } else if (colName == "Candy"){
         colorXScale = d3.scaleLinear().domain([...new Set(list_items)]).range(["#42eba1", defaultColor]);//.range(d3.schemeSet3);
+    } else {
+        colorXScale = d3.scaleLinear().domain([0, 1]).range(["#42eba1", defaultColor]);//.range(d3.schemeSet3);
     }
+
+    displayLegend(colName);
     d3.selectAll("path.unit")
         .style("fill", d => {
             if (d != undefined) {
@@ -2031,3 +2111,79 @@ document.addEventListener("DOMContentLoaded", function () {
     //   document.querySelector("path").addEventListener("touchstart", touchStartTip);
     //   document.querySelector("path").addEventListener("touchend", touchEndTip);
 })
+
+function displayLegend(colName){
+
+    d3.select("#color-legend p").text("Color is mapped to \"" + colName + "\":")
+
+    legendLinear = d3.legendColor()
+        .shapeWidth(34)
+        .cells(10)
+        .shapePadding(36)
+        .orient('horizontal')
+        .labelOffset(28)
+        .labelFormat(d3.format("0.1f"))
+        .labelAlign("start")
+        .scale(colorXScale)
+
+        if (['Win Percent', 'Sugar Percent', 'Price Percent'].includes(colName)) {
+            legendLinear.cells(10)
+        } else {
+            legendLinear.cells(2)
+        }
+      
+    d3.select("#color-legend")
+        .append("svg")
+        .style("width", "100%")
+        .append("g")
+        .attr("class", "colorCell")
+        .style("transform", "translate(15px, 0px)")
+    
+    // d3.selectAll(".label")
+    //     .style("transform", "translate(10px, 30px) !important")
+    
+    d3.select(".colorCell")
+        .call(legendLinear);
+
+}
+
+function displaySizeLegend(colName, min, max){
+
+    sizeXScale = d3.scaleLinear().domain([min, max]).range([5, 20]);
+
+    d3.select("#size-legend p").text("Size is mapped to \"" + colName + "\":")
+
+    legendSize = d3.legendSize()
+        .shape('circle')
+        .cells(10)
+        .shapePadding(40)
+        .orient('horizontal')
+        .labelOffset(50)
+        .labelFormat(d3.format("0.1f"))
+        .labelAlign("middle")
+        .scale(sizeXScale)
+
+        if (['Win Percent', 'Sugar Percent', 'Price Percent'].includes(colName)) {
+            legendSize.cells(10)
+        } else {
+            legendSize.cells(2)
+        }
+      
+    d3.select("#size-legend")
+        .append("svg")
+        .style("width", "100%")
+        .append("g")
+        // .attr("fill", defaultColor)
+        .attr("class", "sizeCell")
+        .style("transform", "translate(15px, 20px)")
+
+    d3.select("#size-legend svg g g g circle")
+        .attr("fill", defaultColor)
+    
+    // d3.selectAll(".label")
+    //     .style("transform", "translate(10px, 30px) !important")
+    
+    d3.select(".sizeCell")
+        .call(legendSize);
+
+}
