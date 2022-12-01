@@ -33,6 +33,8 @@ Shapes: https://www.geeksforgeeks.org/d3-js-symboltriangle-symbol/, https://stac
 Slider: http://ionden.com/a/plugins/ion.rangeSlider/start.html
 Icons: https://www.tutorialrepublic.com/twitter-bootstrap-tutorial/bootstrap-icons.php, https://icons.getbootstrap.com/
 Radio buttons: https://getbootstrap.com/docs/5.0/forms/checks-radios/
+D3 Legend: https://observablehq.com/@d3/color-legend, https://bl.ocks.org/zanarmstrong/0b6276e033142ce95f7f374e20f1c1a7, https://gist.github.com/ymuaa/4b018f238a9d8442aa75dfa32b978a14
+
 
 
 Debugging references:
