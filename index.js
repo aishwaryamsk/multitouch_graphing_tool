@@ -610,7 +610,8 @@ function sortXAxis(attr) {
     updateVisualization();
 
     addActionToUndoStack('sortXAxis');
-
+    // restore to the last zoomed state
+    if (lastZoomState !== {}) zoomed(lastZoomState);
 }
 
 
