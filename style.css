@@ -184,7 +184,7 @@ html, body{
     background-color: #0d6efd;
 }
 
-#pill-overview-tab, #pill-chart-tab, #pill-details-tab{
+#pill-overview-tab, #pill-chart-tab, #pill-details-tab, #pill-legend-tab{
     height: 50px;
     margin-bottom: 10px;
 }
@@ -210,10 +210,25 @@ body>svg{
 
 #tool-tip{
     position: absolute;
+    height: 50px;
+    background-color: rgba(238, 238, 238, 0.959);
+    /* border: #222222;
+    border-width: 1px; */
+    border-radius: 10px;
+    /* background-image: url("images/toolbg.png"); */
 }
 
-/* #tool-tip p{    
-    animation-name: opacity_change;
+#tool-tip p{    
+    /* animation-name: opacity_change;
     animation-duration: 3s;
-    animation-iteration-count: 1;
-} */
+    animation-iteration-count: 1; */
+    margin: 10px;
+}
+
+#upload-text{
+    margin-bottom: 0px;
+}
+
+#color-legend p{
+    margin-top: 30px;
+}
