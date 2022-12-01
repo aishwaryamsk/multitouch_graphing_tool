@@ -276,11 +276,11 @@ function updateVisualization() {
         // xScale.domain(minMax).range([0, width]); // takes number as input
         // sort
         if (attrSortOrder == 0) {
-            xScale.domain(minMax).range([0, width]) // takes number as input
+            xScale.domain(minMax).range([0, width-20]) // takes number as input
 
 
         }
-        else xScale.domain(minMax.reverse()).range([0, width]);
+        else xScale.domain(minMax.reverse()).range([0, width-20]);
     } else { // categorical scale (yes/no)
         xScale = d3.scaleBand();
 
@@ -290,7 +290,7 @@ function updateVisualization() {
         else sortedAxisLabels.sort((a, b) => b.attrName.localeCompare(a.attrName));
 
         //xScale.domain(Object.keys(attrValuesCount)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
-        xScale.domain(sortedAxisLabels.map(d => d.attrValue)).range([0, width]).paddingInner(.7).paddingOuter(0.7); // takes string as input
+        xScale.domain(sortedAxisLabels.map(d => d.attrValue)).range([0, width-20]).paddingInner(.7).paddingOuter(0.7); // takes string as input
 
         // set number of elements in each column
         // get max size in dataset
@@ -1563,24 +1563,24 @@ function addActionToUndoStack(action) {
     redoStack = [];
 }
 
-function changeColor(defaultColor) {
+function changeColor(color) {
     // lasso selection can be [], or 0 selections as an object
     if (selection.length !== 0 && selection.data().length !== 0)
-        updateColors(selection, defaultColor);
+        updateColors(selection, color);
     // applied to all data points
-    else updateColors(d3.selectAll('.unit'), defaultColor);
-    d3.selectAll("#shapes svg path").style('fill', defaultColor);
+    else updateColors(d3.selectAll('.unit'), color);
+    d3.selectAll("#shapes svg path").style('fill', color);
 
     addActionToUndoStack('changeColor');
 }
 
-function updateColors(selection, defaultColor) {
+function updateColors(selection, color) {
     for (let elm of selection) {
         let id = d3.select(elm).attr('id').split('-').at(-1);
         if (!d3.select(`#unit-icon-${id}`).select('svg').empty())
-            d3.select(`#unit-icon-${id}`).select('svg').style('fill', defaultColor);
-        else d3.select(`#unit-icon-${id}`).style('fill', defaultColor);
-        curDataAttrs[id].color = defaultColor;
+            d3.select(`#unit-icon-${id}`).select('svg').style('fill', color);
+        else d3.select(`#unit-icon-${id}`).style('fill', color);
+        curDataAttrs[id].color = color;
     }
 
 }
@@ -1754,7 +1754,7 @@ function updateXAxis(attr) {
     updateUnitViz(lastZoomState.transform.x, lastZoomState.transform.k);
 
     attribute = attr;
-    
+
     setNumericScale();
     groupByAttribute(currentData, attribute);
 
