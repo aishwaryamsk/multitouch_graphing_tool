@@ -1,8 +1,6 @@
 # Multi Touch Graphing Tool
 A graphing tool to explore data using multi-touch gestures.
 
-![multi_touch_vis_tool_cover](https://user-images.githubusercontent.com/8591463/224464352-d623af8c-63ea-4baa-b0ad-f62ea3a7f9de.png)
-
 **Presentation Link:** [View](https://gtvault-my.sharepoint.com/:p:/g/personal/amsk3_gatech_edu/ES6rJc-Tf01NhIilNXDFtS0BR7X_HIU2caQsDdxAWmZCyg?e=s6xVxS)
 
 **Demo Link:** [View](https://aishwaryamsk.github.io/multitouch_graphing_tool/index.html)
